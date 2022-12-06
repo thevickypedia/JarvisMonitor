@@ -21,8 +21,10 @@ def get_data() -> Union[Dict[str, int], None]:
         data = yaml.load(stream=file, Loader=yaml.FullLoader)
 
     # Remove temporary processes that will stop anyway
-    del data['tunneling'] if data.get('tunneling') else None
-    del data['speech_synthesizer'] if data.get('speech_synthesizer') else None
+    if data.get('tunneling'):
+        del data['tunneling']
+    if data.get('speech_synthesizer'):
+        del data['speech_synthesizer']
     return data
 
 
