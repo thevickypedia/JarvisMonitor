@@ -1,0 +1,16 @@
+<table>
+    <thead>
+    <tr>
+        <th>Process Name</th>
+        <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for key, value in result.items() %}
+    <tr>
+        <td> {{ key }}</td>
+        <td> {{ value }} </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>

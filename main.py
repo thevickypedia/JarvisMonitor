@@ -1,13 +1,13 @@
 import os
 import string
 import time
+from threading import Thread
+from typing import Dict, Union
 
 import jinja2
 import psutil
 import yaml
 from gmailconnector.send_email import SendEmail
-from threading import Thread
-from typing import Dict, Union
 
 from constants import FILE_PATH, DATETIME, LOGGER, ColorCode
 
@@ -34,8 +34,8 @@ def is_running(pid) -> bool:
         LOGGER.error(error)
 
 
-def publish_docs(status: dict = None) -> str:
-    """Updates the docs/index.html file and returns the html content to send via email."""
+def publish_docs(status: dict = None):
+    """Updates the docs/index.html file."""
     LOGGER.info("Updating index.html")
     if not status:
         status = {"Jarvis": "&#128308;"}
@@ -50,28 +50,43 @@ def publish_docs(status: dict = None) -> str:
     else:
         stat_text = "Jarvis is up and running"
         stat_file = "green.png"
-    with open('template.html') as temp:
-        template_data = temp.read()
+    with open('web_template.html') as web_temp:
+        template_data = web_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE=stat_file, STATUS_TEXT=stat_text)
     with open(os.path.join('docs', 'index.html'), 'w') as file:
         file.write(content)
-    return content
 
 
-def send_email(content: str, status: dict = None):
+def send_email(status: dict = None):
     """Sends an email notification if Jarvis is down."""
-    if status:
-        response = SendEmail().send_email(subject=f"Status report for Jarvis - {DATETIME}",
-                                          html_body=content, sender="JarvisMonitor")
-    else:
+    if os.path.isfile('last_notify'):
+        with open('last_notify') as file:
+            stamp = float(file.read())
+        if int(time.time()) - stamp < 3_600:
+            LOGGER.info("Last email was sent within an hour.")
+            return
+    LOGGER.info("Sending email")
+    if not status:
         response = SendEmail().send_email(subject="JARVIS IS NOT RUNNING", sender="JarvisMonitor")
+    else:
+        with open('email_template.html') as email_temp:
+            template_data = email_temp.read()
+        template = jinja2.Template(template_data)
+        content = template.render(result=status)
+        if status["Jarvis"] == ColorCode.red:
+            subject = f"Main functionality degraded - {DATETIME}"
+        elif ColorCode.red in list(status.values()):
+            subject = f"Some components degraded - {DATETIME}"
+        else:
+            subject = f"Jarvis is up and running - {DATETIME}"
+        response = SendEmail().send_email(subject=subject, html_body=content, sender="JarvisMonitor")
     if response.ok:
         LOGGER.info("Status report has been sent.")
+        with open('last_notify', 'w') as file:
+            file.write(str(time.time()))
     else:
         LOGGER.info("CRITICAL::FAILED TO SEND STATUS REPORT!!")
-    with open('last_notify', 'w') as file:
-        file.write(str(time.time()))
 
 
 def main() -> None:
@@ -81,8 +96,8 @@ def main() -> None:
     notify = False
     data = get_data()
     if not data:
-        content = publish_docs()
-        Thread(target=send_email, kwargs={"content": content, "status": None}, daemon=True).start()
+        Thread(target=send_email).start()
+        publish_docs()
         return
     for func_name, pid in data.items():
         if psutil.pid_exists(pid) and is_running(pid):
@@ -94,15 +109,9 @@ def main() -> None:
             func_name = func_name.replace('_', ' ').replace('-', ' ')
             status[string.capwords(func_name)] = ColorCode.red
             notify = True
-    content = publish_docs(status=status)
     if notify:
-        if os.path.isfile('last_notify'):
-            with open('last_notify') as file:
-                stamp = float(file.read())
-            if int(time.time()) - stamp < 3_600:
-                LOGGER.info("Last email was sent within an hour.")
-                return
-        Thread(target=send_email, kwargs={"status": status, "content": content}, daemon=True).start()
+        Thread(target=send_email, kwargs={"status": status}).start()
+    publish_docs(status=status)
 
 
 if __name__ == '__main__':
