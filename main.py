@@ -9,7 +9,7 @@ from gmailconnector.send_email import SendEmail
 from threading import Thread
 from typing import Dict, Union
 
-from constants import FILE_PATH, DATETIME, LOGGER
+from constants import FILE_PATH, DATETIME, LOGGER, ColorCode
 
 
 def get_data() -> Union[Dict[str, int], None]:
@@ -36,14 +36,17 @@ def is_running(pid) -> bool:
 
 def publish_docs(status: dict = None) -> str:
     """Updates the docs/index.html file and returns the html content to send via email."""
-    # Defaults to working condition
+    LOGGER.info("Updating index.html")
     if not status:
         status = {"Jarvis": "&#128308;"}
         stat_file = "red.png"
         stat_text = "Unable to fetch the status of Jarvis"
-    elif "&#128308;" in list(status.values()):
+    elif status["Jarvis"] == ColorCode.red:
+        stat_file = "red.png"
+        stat_text = "Main functionality has been degraded. Manual intervention required."
+    elif ColorCode.red in list(status.values()):
         stat_file = "yellow.png"
-        stat_text = "Some components of Jarvis aren't running"
+        stat_text = "Some components are degraded"
     else:
         stat_text = "Jarvis is up and running"
         stat_file = "green.png"
@@ -71,8 +74,9 @@ def send_email(content: str, status: dict = None):
         file.write(str(time.time()))
 
 
-def main():
+def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
+    LOGGER.info(f"Monitoring health check at: {DATETIME}")
     status = {}
     notify = False
     data = get_data()
@@ -84,11 +88,11 @@ def main():
         if psutil.pid_exists(pid) and is_running(pid):
             LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
             func_name = func_name.replace('_', ' ').replace('-', ' ')
-            status[string.capwords(func_name)] = "&#128994;"  # large green circle
+            status[string.capwords(func_name)] = ColorCode.green
         else:
             LOGGER.critical(f"{func_name} [{pid}] is NOT HEALTHY")
             func_name = func_name.replace('_', ' ').replace('-', ' ')
-            status[string.capwords(func_name)] = "&#128308;"  # large red circle
+            status[string.capwords(func_name)] = ColorCode.red
             notify = True
     content = publish_docs(status=status)
     if notify:
