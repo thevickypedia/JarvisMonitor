@@ -21,8 +21,8 @@ def get_data() -> Union[Dict[str, int], None]:
         data = yaml.load(stream=file, Loader=yaml.FullLoader)
 
     # Remove temporary processes that will stop anyway
-    del data['tunneling']
-    del data['speech_synthesizer']
+    del data['tunneling'] if data.get('tunneling') else None
+    del data['speech_synthesizer'] if data.get('speech_synthesizer') else None
     return data
 
 
@@ -41,9 +41,12 @@ def publish_docs(status: dict = None):
         status = {"Jarvis": "&#128308;"}
         stat_file = "red.png"
         stat_text = "Unable to fetch the status of Jarvis"
+    elif len(set(list(status.values()))) == 1:
+        stat_file = "red.png"
+        stat_text = "Service disrupted by an external force."
     elif status["Jarvis"] == ColorCode.red:
         stat_file = "red.png"
-        stat_text = "Main functionality has been degraded. Manual intervention required."
+        stat_text = "Main functionality has been degraded."
     elif ColorCode.red in list(status.values()):
         stat_file = "yellow.png"
         stat_text = "Some components are degraded"
@@ -74,7 +77,9 @@ def send_email(status: dict = None):
             template_data = email_temp.read()
         template = jinja2.Template(template_data)
         content = template.render(result=status)
-        if status["Jarvis"] == ColorCode.red:
+        if len(set(list(status.values()))) == 1:
+            subject = f"Service disrupted by an external force - {DATETIME}"
+        elif status["Jarvis"] == ColorCode.red:
             subject = f"Main functionality degraded - {DATETIME}"
         elif ColorCode.red in list(status.values()):
             subject = f"Some components degraded - {DATETIME}"
