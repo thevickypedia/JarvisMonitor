@@ -25,4 +25,5 @@ HANDLER = logging.FileHandler(filename=datetime.now().strftime(FILENAME), mode='
 HANDLER.setFormatter(fmt=DEFAULT_LOG_FORMAT)
 
 LOGGER.addHandler(hdlr=HANDLER)
+LOGGER.setLevel(level=logging.INFO)
 LOGGER.info(f"\n\nMonitoring health check at: {DATETIME}\n")

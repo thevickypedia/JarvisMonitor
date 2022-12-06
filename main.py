@@ -7,11 +7,13 @@ import psutil
 import yaml
 from gmailconnector.send_email import SendEmail
 from threading import Thread
+from typing import Dict, Union
 
 from constants import FILE_PATH, DATETIME, LOGGER
 
 
-def get_data():
+def get_data() -> Union[Dict[str, int], None]:
+    """Get processes mapping from Jarvis."""
     if not os.path.isfile(FILE_PATH):
         return
 
@@ -24,27 +26,38 @@ def get_data():
     return data
 
 
-def is_running(pid):
+def is_running(pid) -> bool:
+    """Checks if the process is running."""
     try:
         return psutil.Process(pid=pid).status() == psutil.STATUS_RUNNING
     except psutil.Error as error:
         LOGGER.error(error)
 
 
-def publish_docs(status: dict = None):
+def publish_docs(status: dict = None) -> str:
+    """Updates the docs/index.html file and returns the html content to send via email."""
     # Defaults to working condition
-    if status:
-        with open('template.html') as temp:
-            template_data = temp.read()
-        template = jinja2.Template(template_data)
-        content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE="green.png",
-                                  STATUS_TEXT="Jarvis is up and running")
-        with open(os.path.join('docs', 'index.html'), 'w') as file:
-            file.write(content)
-        return content
+    if not status:
+        status = {"Jarvis": "&#128308;"}
+        stat_file = "red.png"
+        stat_text = "Unable to fetch the status of Jarvis"
+    elif "&#128308;" in list(status.values()):
+        stat_file = "yellow.png"
+        stat_text = "Some components of Jarvis aren't running"
+    else:
+        stat_text = "Jarvis is up and running"
+        stat_file = "green.png"
+    with open('template.html') as temp:
+        template_data = temp.read()
+    template = jinja2.Template(template_data)
+    content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE=stat_file, STATUS_TEXT=stat_text)
+    with open(os.path.join('docs', 'index.html'), 'w') as file:
+        file.write(content)
+    return content
 
 
-def send_email(content, status: dict = None):
+def send_email(content: str, status: dict = None):
+    """Sends an email notification if Jarvis is down."""
     if status:
         response = SendEmail().send_email(subject=f"Status report for Jarvis - {DATETIME}",
                                           html_body=content, sender="JarvisMonitor")
@@ -59,6 +72,7 @@ def send_email(content, status: dict = None):
 
 
 def main():
+    """Checks the health of all processes in the mapping and actions accordingly."""
     status = {}
     notify = False
     data = get_data()
