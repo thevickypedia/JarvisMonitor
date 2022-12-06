@@ -8,6 +8,7 @@ load_dotenv(dotenv_path=".env")
 
 
 class ColorCode:
+    """Color codes for red and green status indicators."""
     red: str = "&#128308;"  # large green circle
     green: str = "&#128994;"  # large red circle
 

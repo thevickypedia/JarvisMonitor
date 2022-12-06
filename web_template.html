@@ -83,7 +83,7 @@ th, td {
   border-right: 1px solid #ddd;
 }
 .center {
-  margin-left: 10;
+  margin-left: 40%;
   margin-top: 10;
   margin-right: auto;
 }
@@ -97,9 +97,9 @@ figure {
 <div style="float:right"><i>Last updated: {{ DATETIME }} </i></div>
 <figure>
     <img src="{{ STATUS_FILE }}" alt="status" width="100"/>
-    <figcaption><h3>{{ STATUS_TEXT }}</h3></figcaption>
+    <figcaption><h2 style='font-family:"Courier", Courier, monospace;'>{{ STATUS_TEXT }}</h2></figcaption>
 </figure>
-<table class="center">
+<table class="center" style='font-family:"Courier", Courier, monospace; font-size:100%'>
     <thead>
     <tr>
         <th>Process Name</th>
