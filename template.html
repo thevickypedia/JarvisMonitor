@@ -1,0 +1,55 @@
+<style>
+/*
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+tr:hover {
+  background-color: gray;
+}
+*/
+
+td {
+  height: 30px;
+  vertical-align: bottom;
+}
+th, td {
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+}
+.center {
+  margin-left: 10;
+  margin-top: 10;
+  margin-right: auto;
+}
+figure {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+</style>
+<div style="float:right"><i>Last updated: {{ DATETIME }} </i></div>
+<figure>
+    <img src="{{ STATUS_FILE }}" alt="status" width="100"/>
+    <figcaption><h3>{{ STATUS_TEXT }}</h3></figcaption>
+</figure>
+<table class="center">
+  <thead>
+    <tr>
+      <th>Process Name</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for key, value in result.items() %}
+   <tr>
+       <td> {{ key }} </td>
+       <td><p style="text-align:center"> {{ value }} </p></td>
+   </tr>
+  {% endfor %}
+  </tbody>
+</table>
