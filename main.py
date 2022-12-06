@@ -42,13 +42,13 @@ def publish_docs(status: dict = None):
     if not status:
         status = {"Jarvis": "&#128308;"}
         stat_file = "red.png"
-        stat_text = "Unable to fetch the status of Jarvis"
+        stat_text = "Process map unreachable"
     elif len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
         stat_file = "red.png"
-        stat_text = "Service disrupted by an external force."
+        stat_text = "Service disrupted by an external factor"
     elif status["Jarvis"] == ColorCode.red:
         stat_file = "red.png"
-        stat_text = "Main functionality has been degraded."
+        stat_text = "Main functionality has been degraded"
     elif ColorCode.red in list(status.values()):
         stat_file = "yellow.png"
         stat_text = "Some components are degraded"
