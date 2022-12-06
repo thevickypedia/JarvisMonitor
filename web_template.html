@@ -13,6 +13,54 @@
     <meta name="image" property="og:image" content="https://vigneshrao.com/img/apple-touch-icon.jpg">
     <meta content="width=device-width, initial-scale=1" name="viewport">
 </head>
+<style type="text/css">
+    @import url('//netdna.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css');
+    body {
+    background-color: #ececec;
+    }
+    .night {
+    background-color: #151515;
+    }
+    .toggler {
+    font-size: 28px;
+    border-radius: 100px;
+    background-color: #111111;
+    padding: 15px;
+    color:#fcfcfc;
+    box-shadow: 1px 2px 6px rgba(0,0,0,.3);
+    cursor: pointer;
+    position: fixed;
+    bottom:20px;
+    right: 20px;
+    -webkit-transition: all 0.2s;
+    -moz-transition: all 0.2s;
+    transition: all 0.2s;
+    }
+    .fa-moon-o:before {
+    padding:0 2px;
+    }
+    .fa-sun-o {
+    background-color: #212121;
+    color:#ccc;
+    }
+    .night *{
+    color: #f0f0f0 !important;
+    box-shadow: none;
+    }
+    .night .content {
+    border: 1px solid #999;
+    }
+    .tab {
+    margin-left: 40px;
+    }
+    p.center {
+    text-align: center;
+    }
+    .dotted {
+    border-bottom: 3px dotted #757575;
+    margin-bottom: 1px;
+    }
+</style>
 <style>
 /*
 table, th, td {
@@ -67,4 +115,30 @@ figure {
     {% endfor %}
     </tbody>
 </table>
+<div class="toggler fa fa-moon-o"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script id="rendered-js">
+    var theme = window.localStorage.currentTheme;
+    $('body').addClass(theme);
+    if ($("body").hasClass("night")) {
+        $('.toggler').addClass('fa-sun-o');
+        $('.toggler').removeClass('fa-moon-o');
+    } else {
+        $('.toggler').removeClass('fa-sun-o');
+        $('.toggler').addClass('fa-moon-o');
+    }
+    $('.toggler').click(function () {
+    $('.toggler').toggleClass('fa-sun-o');
+    $('.toggler').toggleClass('fa-moon-o');
+    if ($("body").hasClass("night")) {
+        $('body').toggleClass('night');
+        localStorage.removeItem('currentTheme');
+        localStorage.currentTheme = "day";
+    } else {
+        $('body').toggleClass('night');
+        localStorage.removeItem('currentTheme');
+        localStorage.currentTheme = "night";
+    }
+    });
+</script>
 </html>
