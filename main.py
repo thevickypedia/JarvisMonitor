@@ -43,7 +43,7 @@ def publish_docs(status: dict = None):
         status = {"Jarvis": "&#128308;"}
         stat_file = "red.png"
         stat_text = "Unable to fetch the status of Jarvis"
-    elif len(set(list(status.values()))) == 1:
+    elif len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
         stat_file = "red.png"
         stat_text = "Service disrupted by an external force."
     elif status["Jarvis"] == ColorCode.red:
@@ -79,7 +79,7 @@ def send_email(status: dict = None):
             template_data = email_temp.read()
         template = jinja2.Template(template_data)
         content = template.render(result=status)
-        if len(set(list(status.values()))) == 1:
+        if len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
             subject = f"Service disrupted by an external force - {DATETIME}"
         elif status["Jarvis"] == ColorCode.red:
             subject = f"Main functionality degraded - {DATETIME}"
