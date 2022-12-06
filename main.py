@@ -40,7 +40,7 @@ def publish_docs(status: dict = None):
     """Updates the docs/index.html file."""
     LOGGER.info("Updating index.html")
     if not status:
-        status = {"Jarvis": "&#128308;"}
+        status = {"Jarvis": ColorCode.red}
         stat_file = "red.png"
         stat_text = "Process map unreachable"
     elif len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
