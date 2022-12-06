@@ -2,4 +2,5 @@
 venv/
 logs/
 .env
+monitor.log
 last_notify

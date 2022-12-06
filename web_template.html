@@ -1,3 +1,18 @@
+<html>
+<head>
+    <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
+    <meta content="no-cache" http-equiv="Pragma"/>
+    <meta content="0" http-equiv="Expires"/>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <title>Jarvis::Health Check</title>
+    <meta property="og:type" content="Portfolio">
+    <meta content="This is a health check page for Jarvis - AI" name="description">
+    <meta name="keywords" content="AWS, HTML, CSS, JavaScript">
+    <meta name="author" content="Vignesh Sivanandha Rao">
+    <meta name="image" property="og:image" content="https://vigneshrao.com/img/apple-touch-icon.jpg">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+</head>
 <style>
 /*
 table, th, td {
@@ -30,7 +45,6 @@ figure {
     align-items: center;
 }
 
-
 </style>
 <div style="float:right"><i>Last updated: {{ DATETIME }} </i></div>
 <figure>
@@ -38,18 +52,19 @@ figure {
     <figcaption><h3>{{ STATUS_TEXT }}</h3></figcaption>
 </figure>
 <table class="center">
-  <thead>
+    <thead>
     <tr>
-      <th>Process Name</th>
-      <th>Status</th>
+        <th>Process Name</th>
+        <th>Status</th>
     </tr>
-  </thead>
-  <tbody>
-  {% for key, value in result.items() %}
-   <tr>
-       <td> {{ key }} </td>
-       <td><p style="text-align:center"> {{ value }} </p></td>
-   </tr>
-  {% endfor %}
-  </tbody>
+    </thead>
+    <tbody>
+    {% for key, value in result.items() %}
+    <tr>
+        <td> {{ key }}</td>
+        <td><p style="text-align:center"> {{ value }} </p></td>
+    </tr>
+    {% endfor %}
+    </tbody>
 </table>
+</html>
