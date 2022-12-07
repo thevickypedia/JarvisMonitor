@@ -109,12 +109,12 @@ def main() -> None:
     for func_name, pid in data.items():
         if psutil.pid_exists(pid) and is_running(pid):
             LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
-            func_name = func_name.replace('_', ' ').replace('-', ' ')
-            status[string.capwords(func_name)] = ColorCode.green
+            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+            status[func_name] = ColorCode.green
         else:
             LOGGER.critical(f"{func_name} [{pid}] is NOT HEALTHY")
-            func_name = func_name.replace('_', ' ').replace('-', ' ')
-            status[string.capwords(func_name)] = ColorCode.red
+            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+            status[func_name] = ColorCode.red
             notify = True
     if notify:
         Thread(target=send_email, kwargs={"status": status}).start()
