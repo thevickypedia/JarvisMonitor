@@ -40,21 +40,21 @@ def publish_docs(status: dict = None):
     """Updates the docs/index.html file."""
     LOGGER.info("Updating index.html")
     if not status:
-        status = {"Jarvis": ColorCode.red}
-        stat_file = "red.png"
+        status = {"Jarvis": ColorCode.blue}
+        stat_file = "maintenance.png"
         stat_text = "Process map unreachable"
     elif len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
-        stat_file = "red.png"
+        stat_file = "issue.png"
         stat_text = "Service disrupted by an external factor"
     elif status["Jarvis"] == ColorCode.red:
-        stat_file = "red.png"
+        stat_file = "notice.png"
         stat_text = "Main functionality has been degraded"
     elif ColorCode.red in list(status.values()):
-        stat_file = "yellow.png"
+        stat_file = "warning.png"
         stat_text = "Some components are degraded"
     else:
         stat_text = "Jarvis is up and running"
-        stat_file = "green.png"
+        stat_file = "ok.png"
     with open('web_template.html') as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
@@ -73,7 +73,7 @@ def send_email(status: dict = None):
             return
     LOGGER.info("Sending email")
     if not status:
-        response = SendEmail().send_email(subject="JARVIS IS NOT RUNNING", sender="JarvisMonitor")
+        response = SendEmail().send_email(subject="Process map unreachable", sender="JarvisMonitor")
     else:
         with open('email_template.html') as email_temp:
             template_data = email_temp.read()

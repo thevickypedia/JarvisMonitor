@@ -11,6 +11,7 @@ class ColorCode:
     """Color codes for red and green status indicators."""
     red: str = "&#128308;"  # large green circle
     green: str = "&#128994;"  # large red circle
+    blue: str = "&#128309;"  # large blue circle
 
 
 if not os.path.isdir('logs'):

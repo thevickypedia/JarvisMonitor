@@ -83,9 +83,18 @@ th, td {
   border-right: 1px solid #ddd;
 }
 .center {
-  margin-left: 40%;
-  margin-top: 10;
+  margin-left: auto;
   margin-right: auto;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.corner{
+   position:absolute;
+   top:2%;
+   right:2%;
 }
 figure {
     display: flex;
@@ -94,29 +103,44 @@ figure {
 }
 
 </style>
-<div style="float:right"><i>Last updated: {{ DATETIME }} </i></div>
-<figure>
-    <img src="{{ STATUS_FILE }}" alt="status" width="100"/>
-    <figcaption><h2 style='font-family:"Courier", Courier, monospace;'>{{ STATUS_TEXT }}</h2></figcaption>
-</figure>
-<table class="center" style='font-family:"Courier", Courier, monospace; font-size:100%'>
+<div class="corner"><i>Last updated: {{ DATETIME }}</i></div>
+<div class="container">
+    <img style="text-align:center" src="{{ STATUS_FILE }}" alt="status" width="100"/>
+    <h2 style='font-family:"Courier", Courier, monospace; text-align:center'>{{ STATUS_TEXT }}</h2>
+</div>
+<table class="center" style='font-family:"Courier", Courier, monospace; font-size:100%; width:30%'>
     <thead>
     <tr>
-        <th>Process Name</th>
+        <th style="width:60%">Process Name</th>
         <th>Status</th>
     </tr>
     </thead>
     <tbody>
     {% for key, value in result.items() %}
     <tr>
-        <td> {{ key }}</td>
+        <td><p style="margin-left: 30%"> {{ key }} </p></td>
         <td><p style="text-align:center"> {{ value }} </p></td>
     </tr>
     {% endfor %}
     </tbody>
 </table>
 <div class="toggler fa fa-moon-o"></div>
-<div style="font-family:'Helvetica Neue';font-size:12px;line-height:20px;margin-bottom:10px;color:#444444;line-height:20px;padding:16px 16px 16px 16px;text-align:center;margin-left:-10%">
+
+<br><br><br><br>
+<figure>
+    <img src="ok.png" width="22"/>
+    <figcaption><p style='font-family:"Courier", Courier, monospace;font-size:12px'>No Issues&emsp;</p></figcaption>
+    <img src="maintenance.png" width="22"/>
+    <figcaption><p style='font-family:"Courier", Courier, monospace;font-size:12px'>Under maintenance&emsp;</p></figcaption>
+    <img src="notice.png" width="22"/>
+    <figcaption><p style='font-family:"Courier", Courier, monospace;font-size:12px'>Requires attention&emsp;</p></figcaption>
+    <img src="warning.png" width="22"/>
+    <figcaption><p style='font-family:"Courier", Courier, monospace;font-size:12px'>Partially degraded&emsp;</p></figcaption>
+    <img src="issue.png" width="22"/>
+    <figcaption><p style='font-family:"Courier", Courier, monospace;font-size:12px'>Service disrupted</p></figcaption>
+</figure>
+
+<div style="font-family:'Helvetica Neue';font-size:12px;line-height:20px;margin-bottom:10px;color:#444444;line-height:20px;padding:16px 16px 16px 16px;text-align:center;">
     <br><b>Components Monitored:</b> <a href="https://thevickypedia.github.io/Jarvis/#executors.processor.start_processes" target="_bottom">#executors.processor.start_processes</a>
     <br><b>Source code:</b> <a href="https://github.com/thevickypedia/JarvisMonitor" target="_bottom">https://github.com/thevickypedia/JarvisMonitor</a>
     <br><b>Communicate:</b> <a href="https://vigneshrao.com/jarvisoffline" target="_bottom">https://vigneshrao.com/jarvisoffline</a>
