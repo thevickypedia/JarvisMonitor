@@ -2,7 +2,7 @@ import os
 import string
 import time
 from threading import Thread
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 import jinja2
 import psutil
@@ -18,7 +18,7 @@ def get_data() -> Union[Dict[str, int], None]:
         return
 
     with open(FILE_PATH) as file:
-        data = yaml.load(stream=file, Loader=yaml.FullLoader)
+        data = yaml.load(stream=file, Loader=yaml.FullLoader) or {}
 
     # Remove temporary processes that will stop anyway
     if data.get('tunneling'):
@@ -39,26 +39,45 @@ def is_running(pid) -> bool:
 def publish_docs(status: dict = None):
     """Updates the docs/index.html file."""
     LOGGER.info("Updating index.html")
+    t_desc, l_desc = "", ""
     if not status:
         status = {"Jarvis": ColorCode.blue}
         stat_file = "maintenance.png"
-        stat_text = "Process map unreachable"
+        stat_text = "Process Map Unreachable"
+        t_desc = "<b>Description:</b> Source feed is missing, Jarvis has been stopped for maintenance."
     elif len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
         stat_file = "issue.png"
         stat_text = "Service disrupted by an external factor"
+        t_desc = "<b>Description:</b> Source feed is present but all processes have been terminated abruptly."
     elif status["Jarvis"] == ColorCode.red:
         stat_file = "notice.png"
         stat_text = "Main functionality has been degraded"
+        t_desc = "<b>Description:</b> Main process has degraded, making child processes rouge <i>yet active.</i>"
     elif ColorCode.red in list(status.values()):
+        __html_list: Dict[str, List[str]] = {}
+        __keys = list(status.keys())
         stat_file = "warning.png"
         stat_text = "Some components are degraded"
+        if "Automator" in __keys:
+            __html_list["automator"] = ["Cron jobs", "Home automation", "Alarms and Reminders",
+                                        "Timed sync for Meetings and Events"]
+        if "Fast Api" in __keys:
+            __html_list["fastapi"] = ["Offline communicator", "Robinhood report gatherer", "Jarvis UI", "Stock monitor",
+                                      "Surveillance"]
+        if "Telegram Api" in __keys:
+            __html_list["telegram api"] = ["Telegram Bot"]
+        if "Wifi Connector" in __keys:
+            __html_list["wifi connector"] = ["WiFi Re-connector"]
+        for k, v in __html_list.items():
+            l_desc += f"<b>Impacted by {k}:</b><br><ul><li>{'</li><li>'.join(v)}</li></ul>"
     else:
         stat_text = "Jarvis is up and running"
         stat_file = "ok.png"
     with open('web_template.html') as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
-    content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE=stat_file, STATUS_TEXT=stat_text)
+    content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
+                              TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc)
     with open(os.path.join('docs', 'index.html'), 'w') as file:
         file.write(content)
 
@@ -71,9 +90,18 @@ def send_email(status: dict = None):
         if int(time.time()) - stamp < 3_600:
             LOGGER.info("Last email was sent within an hour.")
             return
+    try:
+        email_obj = SendEmail()
+    except ValueError as error:
+        LOGGER.critical(error)
+        return
+    auth = email_obj.authenticate
+    if not auth.ok:
+        LOGGER.critical(auth.body)
+        return
     LOGGER.info("Sending email")
     if not status:
-        response = SendEmail().send_email(subject="Process map unreachable", sender="JarvisMonitor")
+        response = email_obj.send_email(subject="Process map unreachable", sender="JarvisMonitor")
     else:
         with open('email_template.html') as email_temp:
             template_data = email_temp.read()
@@ -87,13 +115,13 @@ def send_email(status: dict = None):
             subject = f"Some components degraded - {DATETIME}"
         else:
             subject = f"Jarvis is up and running - {DATETIME}"
-        response = SendEmail().send_email(subject=subject, html_body=content, sender="JarvisMonitor")
+        response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor")
     if response.ok:
         LOGGER.info("Status report has been sent.")
         with open('last_notify', 'w') as file:
             file.write(str(time.time()))
     else:
-        LOGGER.info("CRITICAL::FAILED TO SEND STATUS REPORT!!")
+        LOGGER.critical("CRITICAL::FAILED TO SEND STATUS REPORT!!")
 
 
 def main() -> None:
@@ -107,6 +135,9 @@ def main() -> None:
         publish_docs()
         return
     for func_name, pid in data.items():
+        if not isinstance(pid, int):
+            LOGGER.warning(f"{func_name} [{pid}] is invalid.")
+            continue
         if psutil.pid_exists(pid) and is_running(pid):
             LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
             func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')

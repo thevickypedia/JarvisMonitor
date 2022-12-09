@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -17,7 +18,7 @@ class ColorCode:
 if not os.path.isdir('logs'):
     os.mkdir('logs')
 
-DATETIME = datetime.now().strftime("%B %d, %Y - %I:%M %p") + " " + datetime.utcnow().astimezone().tzname()
+DATETIME = datetime.now().strftime("%B %d, %Y - %I:%M %p %Z") + " " + time.strftime("%Z %z")
 
 DEFAULT_LOG_FORMAT = logging.Formatter(
     datefmt='%b-%d-%Y %I:%M:%S %p',
