@@ -21,7 +21,7 @@ Before making any changes to the `main` branch:
 
 ## References
 - Source Repo: [Jarvis][1]
-- Status Page: [status][2]
+- Status Page: [Health][2]
 
 [1]: https://github.com/thevickypedia/Jarvis
 [2]: https://jarvis.vigneshrao.com

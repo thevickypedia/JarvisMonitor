@@ -3,22 +3,22 @@
 dt=$(date '+%d/%m/%Y %H:%M:%S %Z %z');
 default=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
 
-echo -e '\n***************************************************************************************************'
+echo -e '\n\n***************************************************************************************************'
 echo "                               $dt"
 echo -e '***************************************************************************************************\n'
 
-echo 'Deleting the existing branch: docs'
-git branch -D docs  # Delete local branch to avoid overlap errors
-
-echo "Retrieving latest commit info from $default branch"
+echo -e "\nSwitching to $default branch"
 git checkout "$default"
+echo -e "\nRetrieving latest commit info from $default branch"
 git pull --rebase
 sha=$(git log --format="%H" -n 1)
 msg=$(git log --oneline -1)
 # msg=$(git log -1 --pretty=%B)  # Get commit message in multiple lines
-echo "Latest commit on $default branch: $sha - $msg"
 
-echo "Resetting docs branch to match $default"
+echo -e "\nLatest commit on $default branch: $sha - $msg"
+
+echo -e "\nResetting docs branch to match $default"
+git branch -D docs  # Delete local branch to avoid overlap errors
 git checkout -b docs
 git reset --hard "$sha"
 # git push -f origin docs  # Instant reset
@@ -28,14 +28,14 @@ if [[ -f "venv/bin/activate" ]]; then
   source venv/bin/activate
 fi
 
-echo 'Running monitor script'
+echo -e "\nRunning monitor script"
 python main.py
 
-echo 'Adding all changes to stage'
+echo -e "Adding all changes to stage"
 git add --all
 
-echo 'Running git commit'
+echo -e "Running git commit"
 git commit -m "Updated as of $dt"
 
-echo 'Pushing changes to origin'
+echo -e "Pushing changes to origin"
 git push -f origin docs
