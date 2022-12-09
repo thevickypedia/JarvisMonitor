@@ -130,6 +130,7 @@ dmypy.json
 
 # OS Specific
 .idea
+.DS_Store
 
 # Module specific
 last_notify
