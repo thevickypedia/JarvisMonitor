@@ -58,15 +58,15 @@ def publish_docs(status: dict = None):
         __keys = list(status.keys())
         stat_file = "warning.png"
         stat_text = "Some components are degraded"
-        if "Automator" in __keys:
+        if "Automator" in __keys and status["Automator"] == ColorCode.red:
             __html_list["automator"] = ["Cron jobs", "Home automation", "Alarms and Reminders",
                                         "Timed sync for Meetings and Events"]
-        if "Fast Api" in __keys:
+        if "Fast Api" in __keys and status["Fast Api"] == ColorCode.red:
             __html_list["fastapi"] = ["Offline communicator", "Robinhood report gatherer", "Jarvis UI", "Stock monitor",
                                       "Surveillance"]
-        if "Telegram Api" in __keys:
+        if "Telegram Api" in __keys and status["Telegram Api"] == ColorCode.red:
             __html_list["telegram api"] = ["Telegram Bot"]
-        if "Wifi Connector" in __keys:
+        if "Wifi Connector" in __keys and status["Wifi Connector"] == ColorCode.red:
             __html_list["wifi connector"] = ["WiFi Re-connector"]
         for k, v in __html_list.items():
             l_desc += f"<b>Impacted by {k}:</b><br><ul><li>{'</li><li>'.join(v)}</li></ul>"
