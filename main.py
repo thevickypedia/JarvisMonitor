@@ -9,7 +9,7 @@ import psutil
 import yaml
 from gmailconnector.send_email import SendEmail
 
-from constants import FILE_PATH, DATETIME, LOGGER, ColorCode
+from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode
 
 
 def get_data() -> Union[Dict[str, int], None]:
@@ -84,10 +84,21 @@ def publish_docs(status: dict = None):
 
 def send_email(status: dict = None):
     """Sends an email notification if Jarvis is down."""
-    if os.path.isfile('last_notify'):
-        with open('last_notify') as file:
-            stamp = float(file.read())
-        if int(time.time()) - stamp < 3_600:
+    if not status:
+        state = 'maintenance'
+    else:
+        if len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
+            state = 'issue'
+        elif status["Jarvis"] == ColorCode.red:
+            state = 'notice'
+        elif ColorCode.red in list(status.values()):
+            state = 'warning'
+        else:
+            state = 'ok'
+    if os.path.isfile(NOTIFICATION):
+        with open(NOTIFICATION) as file:
+            data = yaml.load(stream=file, Loader=yaml.FullLoader)
+        if data.get(state) and time.time() - data[state] < 3_600:
             LOGGER.info("Last email was sent within an hour.")
             return
     try:
@@ -118,8 +129,8 @@ def send_email(status: dict = None):
         response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor")
     if response.ok:
         LOGGER.info("Status report has been sent.")
-        with open('last_notify', 'w') as file:
-            file.write(str(time.time()))
+        with open(NOTIFICATION, 'w') as file:
+            yaml.dump(data={state: time.time()}, stream=file)
     else:
         LOGGER.critical("CRITICAL::FAILED TO SEND STATUS REPORT!!")
 
@@ -149,6 +160,8 @@ def main() -> None:
             notify = True
     if notify:
         Thread(target=send_email, kwargs={"status": status}).start()
+    elif os.path.isfile(NOTIFICATION):
+        os.remove(NOTIFICATION)
     publish_docs(status=status)
 
 

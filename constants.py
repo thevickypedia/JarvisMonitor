@@ -27,6 +27,7 @@ DEFAULT_LOG_FORMAT = logging.Formatter(
 FILENAME = datetime.now().strftime(os.path.join('logs', 'jarvis_%d-%m-%Y.log'))
 
 FILE_PATH = os.environ.get("FILE_PATH", os.path.join("Jarvis", "fileio", "processes.yaml"))
+NOTIFICATION = os.path.join(os.getcwd(), 'last_notify.yaml')
 
 LOGGER = logging.getLogger("jarvis")
 

@@ -133,4 +133,4 @@ dmypy.json
 .DS_Store
 
 # Module specific
-last_notify
+last_notify.yaml
