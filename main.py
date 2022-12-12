@@ -73,6 +73,9 @@ def publish_docs(status: dict = None):
     else:
         stat_text = "Jarvis is up and running"
         stat_file = "ok.png"
+        if len(status) == 1:
+            t_desc = "<b>Description:</b> Jarvis is running in limited mode. " \
+                     "All offline communicators and home automations are currently unavailable."
     with open('web_template.html') as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
