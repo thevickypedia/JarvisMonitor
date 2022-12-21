@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -45,22 +44,13 @@ with open(FILENAME, 'a+') as file:
     else:
         file.write(f"\n{write}\n")
 
-_ignore = os.environ.get("IGNORE") or \
-          os.environ.get("ignore")
+skip_schedule = os.environ.get("SKIP_SCHEDULE") or \
+                os.environ.get("skip_schedule") or \
+                ""
 try:
-    __ignore = json.loads(_ignore)
-    if ignore_time := __ignore.get('time'):
-        datetime.strptime(ignore_time, "%I:%M %p")  # Validate datetime format
-    else:
-        ignore_time = ""
-    if ignore_processes := __ignore.get('processes'):
-        if not isinstance(ignore_processes, list):
-            raise ValueError(f"input type for 'processes' should be a list, received {type(ignore_processes)!r}")
-    else:
-        ignore_processes = []
-except json.JSONDecodeError as error:
+    datetime.strptime(skip_schedule, "%I:%M %p")  # Validate datetime format
+except ValueError as error:
     LOGGER.error(error)
-    raise
 
 FILE_PATH = os.environ.get("FILE_PATH") or \
             os.environ.get("file_path") or \

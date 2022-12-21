@@ -10,7 +10,7 @@ import psutil
 import yaml
 from gmailconnector.send_email import SendEmail
 
-from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, ignore_time, ignore_processes
+from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule
 
 
 def get_data() -> Union[Dict[str, int], None]:
@@ -21,12 +21,11 @@ def get_data() -> Union[Dict[str, int], None]:
     with open(FILE_PATH) as file:
         data = yaml.load(stream=file, Loader=yaml.FullLoader) or {}
 
-    # Remove processes stored as env vars that can be ignored in status page
-    for remove in ignore_processes:
-        if data.get(remove):
-            del data[remove]
-        else:
-            LOGGER.warning(f"Remove was supposed to be ignored but not present in mapping file.")
+    # Remove temporary processes that will stop anyway
+    if data.get('tunneling'):
+        del data['tunneling']
+    if data.get('speech_synthesizer'):
+        del data['speech_synthesizer']
     return data
 
 
@@ -143,8 +142,8 @@ def send_email(status: dict = None):
 
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
-    if ignore_time == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info(f"Schedule ignored at {ignore_time}")
+    if skip_schedule == datetime.now().strftime("%I:%M %p"):
+        LOGGER.info(f"Schedule ignored at {skip_schedule!r}")
         return
     LOGGER.info(f"Monitoring health check at: {DATETIME}")
     status = {}
