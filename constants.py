@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -26,7 +27,6 @@ DEFAULT_LOG_FORMAT = logging.Formatter(
 )
 FILENAME = datetime.now().strftime(os.path.join('logs', 'jarvis_%d-%m-%Y.log'))
 
-FILE_PATH = os.environ.get("FILE_PATH", os.path.join("Jarvis", "fileio", "processes.yaml"))
 NOTIFICATION = os.path.join(os.getcwd(), 'last_notify.yaml')
 
 LOGGER = logging.getLogger("jarvis")
@@ -44,3 +44,24 @@ with open(FILENAME, 'a+') as file:
         file.write(f"{write}\n")
     else:
         file.write(f"\n{write}\n")
+
+_ignore = os.environ.get("IGNORE") or \
+          os.environ.get("ignore")
+try:
+    __ignore = json.loads(_ignore)
+    if ignore_time := __ignore.get('time'):
+        datetime.strptime(ignore_time, "%I:%M %p")  # Validate datetime format
+    else:
+        ignore_time = ""
+    if ignore_processes := __ignore.get('processes'):
+        if not isinstance(ignore_processes, list):
+            raise ValueError(f"input type for 'processes' should be a list, received {type(ignore_processes)!r}")
+    else:
+        ignore_processes = []
+except json.JSONDecodeError as error:
+    LOGGER.error(error)
+    raise
+
+FILE_PATH = os.environ.get("FILE_PATH") or \
+            os.environ.get("file_path") or \
+            os.path.join("Jarvis", "fileio", "processes.yaml")

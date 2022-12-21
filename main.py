@@ -1,6 +1,7 @@
 import os
 import string
 import time
+from datetime import datetime
 from threading import Thread
 from typing import Dict, Union, List
 
@@ -9,7 +10,7 @@ import psutil
 import yaml
 from gmailconnector.send_email import SendEmail
 
-from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode
+from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, ignore_time, ignore_processes
 
 
 def get_data() -> Union[Dict[str, int], None]:
@@ -20,11 +21,12 @@ def get_data() -> Union[Dict[str, int], None]:
     with open(FILE_PATH) as file:
         data = yaml.load(stream=file, Loader=yaml.FullLoader) or {}
 
-    # Remove temporary processes that will stop anyway
-    if data.get('tunneling'):
-        del data['tunneling']
-    if data.get('speech_synthesizer'):
-        del data['speech_synthesizer']
+    # Remove processes stored as env vars that can be ignored in status page
+    for remove in ignore_processes:
+        if data.get(remove):
+            del data[remove]
+        else:
+            LOGGER.warning(f"Remove was supposed to be ignored but not present in mapping file.")
     return data
 
 
@@ -114,9 +116,7 @@ def send_email(status: dict = None):
         LOGGER.critical(auth.body)
         return
     LOGGER.info("Sending email")
-    if not status:
-        response = email_obj.send_email(subject="Process map unreachable", sender="JarvisMonitor")
-    else:
+    if status:
         with open('email_template.html') as email_temp:
             template_data = email_temp.read()
         template = jinja2.Template(template_data)
@@ -130,6 +130,9 @@ def send_email(status: dict = None):
         else:
             subject = f"Jarvis is up and running - {DATETIME}"
         response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor")
+    else:
+        response = email_obj.send_email(subject=f"Process map unreachable {datetime.now().strftime('%c')}",
+                                        sender="JarvisMonitor")
     if response.ok:
         LOGGER.info("Status report has been sent.")
         with open(NOTIFICATION, 'w') as file:
@@ -140,6 +143,9 @@ def send_email(status: dict = None):
 
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
+    if ignore_time == datetime.now().strftime("%I:%M %p"):
+        LOGGER.info(f"Schedule ignored at {ignore_time}")
+        return
     LOGGER.info(f"Monitoring health check at: {DATETIME}")
     status = {}
     notify = False
