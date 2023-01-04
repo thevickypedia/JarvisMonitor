@@ -55,7 +55,7 @@ def publish_docs(status: dict = None) -> NoReturn:
     LOGGER.info("Updating index.html")
     t_desc, l_desc = "", ""
     if not status:  # process map is missing
-        status = {"Jarvis": ColorCode.blue}
+        status = {"Jarvis": [ColorCode.blue, "Maintenance"]}
         stat_file = "maintenance.png"
         stat_text = "Process Map Unreachable"
         t_desc = "<b>Description:</b> Source feed is missing, Jarvis has been stopped for maintenance."
@@ -144,7 +144,6 @@ def main() -> None:
     notify = False
     data = get_data()
     if not data:
-        Thread(target=send_email).start()
         publish_docs()
         return
     for func_name, proc_info in data.items():
