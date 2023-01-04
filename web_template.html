@@ -98,6 +98,42 @@ ul {
 }
 
 </style>
+<style>
+    .owners {
+      width: 500px;
+      height: 300px;
+      border: 0px solid #ff9d2a;
+      margin: auto;
+      float: left;
+    }
+
+    span.own1 {
+      font-size: 13px;
+      width: 350px;
+      letter-spacing: 1px;
+      line-height: 20px;
+      position: absolute;
+      text-align: center;
+      text-transform: uppercase;
+      top: auto;
+      left: auto;
+      display: none;
+      padding: 0 0px;
+    }
+
+    p.own {
+      margin: 0px;
+      float: left;
+      position: relative;
+      cursor: pointer;
+    }
+
+    p.own:hover span {
+      display: block;
+      z-index: 1
+    }
+</style>
+
 <div class="corner">
     <i>
         Last updated: {{ DATETIME }}<br>
@@ -121,7 +157,8 @@ ul {
     {% for key, value in result.items() %}
     <tr>
         <td><p style="margin-left: 25%"> {{ key }} </p></td>
-        <td><p style="text-align:center"> {{ value }} </p></td>
+        <td><p style="text-align:center"> {{ value[0] }} </p></td>
+        <td style='border:none;'><p class="own">&nbsp;&nbsp;&nbsp;&#9432;<span class="own1">{{ value[1] }}</span></p></td>
     </tr>
     {% endfor %}
     </tbody>

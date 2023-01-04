@@ -3,7 +3,7 @@ import string
 import time
 from datetime import datetime
 from threading import Thread
-from typing import Dict, Union
+from typing import Dict, Union, NoReturn
 
 import jinja2
 import psutil
@@ -12,7 +12,6 @@ from gmailconnector.send_email import SendEmail
 
 from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule
 
-impact_lib = {}
 if os.path.isfile(os.path.join('docs', 'CNAME')):
     with open(os.path.join('docs', 'CNAME')) as f:
         webpage = f.read()
@@ -36,7 +35,22 @@ def is_running(pid) -> bool:
         LOGGER.error(error)
 
 
-def publish_docs(status: dict = None):
+def all_pids_are_red(status: dict) -> bool:
+    """Checks condition for all PIDs being red and returns a boolean flag."""
+    return len(set(list(zip(*status.values()))[0])) == 1 and set(list(zip(*status.values()))[0]) == {ColorCode.red}
+
+
+def main_process_is_red(status: dict) -> bool:
+    """Checks condition for main process being red and returns a boolean flag."""
+    return status["Jarvis"][0] == ColorCode.red
+
+
+def some_pids_are_red(status: dict) -> bool:
+    """Checks condition for one or more sub-processes being red and returns a boolean flag."""
+    return ColorCode.red in list(zip(*status.values()))[0]
+
+
+def publish_docs(status: dict = None) -> NoReturn:
     """Updates the docs/index.html file."""
     LOGGER.info("Updating index.html")
     t_desc, l_desc = "", ""
@@ -45,20 +59,20 @@ def publish_docs(status: dict = None):
         stat_file = "maintenance.png"
         stat_text = "Process Map Unreachable"
         t_desc = "<b>Description:</b> Source feed is missing, Jarvis has been stopped for maintenance."
-    elif len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:  # all pids are red
+    elif all_pids_are_red(status=status):
         stat_file = "issue.png"
         stat_text = "Service disrupted by an external factor"
         t_desc = "<b>Description:</b> Source feed is present but all processes have been terminated abruptly."
-    elif status["Jarvis"] == ColorCode.red:  # main process is red
+    elif main_process_is_red(status=status):
         stat_file = "notice.png"
         stat_text = "Main functionality has been degraded"
         t_desc = "<b>Description:</b> Main process has degraded, making child processes rouge <i>yet active.</i>"
-    elif ColorCode.red in list(status.values()):  # one or more subprocess is red
+    elif some_pids_are_red(status=status):
         stat_file = "warning.png"
         stat_text = "Some components are degraded"
         for key in status.keys():
-            if status[key] == ColorCode.red:
-                l_desc += f"<b>Impacted by {key.lower()}:</b><br><ul><li>{'</li><li>'.join(impact_lib[key])}</li></ul>"
+            if status[key][0] == ColorCode.red:
+                l_desc += f"<b>Impacted by {key.lower()}:</b><br><ul><li>{'</li><li>'.join(status[key][1])}</li></ul>"
     else:  # all green
         stat_text = "Jarvis is up and running"
         stat_file = "ok.png"
@@ -74,19 +88,23 @@ def publish_docs(status: dict = None):
         file.write(content)
 
 
-def send_email(status: dict = None):
+def send_email(status: dict = None) -> None:
     """Sends an email notification if Jarvis is down."""
     if not status:
         LOGGER.warning("Jarvis is in maintenance mode.")
         return
-    if len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:
+    if all_pids_are_red(status=status):
         state = 'issue'
-    elif status["Jarvis"] == ColorCode.red:
+        subject = f"Service disrupted by an external force - {DATETIME}"
+    elif main_process_is_red(status=status):
         state = 'notice'
-    elif ColorCode.red in list(status.values()):
+        subject = f"Main functionality degraded - {DATETIME}"
+    elif some_pids_are_red(status=status):
         state = 'warning'
+        subject = f"Some components degraded - {DATETIME}"
     else:
-        state = 'ok'
+        LOGGER.critical("`notify` flag was set to True without any components being affected.")
+        return
     if os.path.isfile(NOTIFICATION):
         with open(NOTIFICATION) as file:
             data = yaml.load(stream=file, Loader=yaml.FullLoader)
@@ -107,16 +125,6 @@ def send_email(status: dict = None):
         template_data = email_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, webpage=webpage)
-    if len(set(list(status.values()))) == 1 and set(list(status.values())) == {ColorCode.red}:  # all pids are red
-        subject = f"Service disrupted by an external force - {DATETIME}"
-    elif status["Jarvis"] == ColorCode.red:  # main process is red
-        subject = f"Main functionality degraded - {DATETIME}"
-    elif ColorCode.red in list(status.values()):  # one or more subprocess is red
-        subject = f"Some components degraded - {DATETIME}"
-    else:
-        # should never get here
-        LOGGER.critical("`notify` flag was set to True without any components being affected.")
-        return
     response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor")
     if response.ok:
         LOGGER.info("Status report has been sent.")
@@ -147,13 +155,12 @@ def main() -> None:
         if psutil.pid_exists(pid) and is_running(pid):
             LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
             func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
-            status[func_name] = ColorCode.green
+            status[func_name] = [ColorCode.green, proc_impact]
         else:
             LOGGER.critical(f"{func_name} [{pid}] is NOT HEALTHY")
             func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
-            status[func_name] = ColorCode.red
+            status[func_name] = [ColorCode.red, proc_impact]
             notify = True
-        impact_lib[func_name] = proc_impact
     if notify:
         Thread(target=send_email, kwargs={"status": status}).start()
     elif os.path.isfile(NOTIFICATION):
