@@ -55,7 +55,7 @@ def publish_docs(status: dict = None) -> NoReturn:
     LOGGER.info("Updating index.html")
     t_desc, l_desc = "", ""
     if not status:  # process map is missing
-        status = {"Jarvis": [ColorCode.blue, "Maintenance"]}
+        status = {"Jarvis": [ColorCode.blue, ["Maintenance"]]}
         stat_file = "maintenance.png"
         stat_text = "Process Map Unreachable"
         t_desc = "<b>Description:</b> Source feed is missing, Jarvis has been stopped for maintenance."
