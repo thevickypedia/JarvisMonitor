@@ -18,122 +18,86 @@
     <link rel="stylesheet" href="https://rawgit.com/thevickypedia/open-source/main/nightmode/night.css">
 </head>
 <style>
-/*
-table, th, td {
-    border: 1px solid black;
-    border-collapse: collapse;
-}
-tr:hover {
-    background-color: gray;
-}
-*/
+    /*
+    table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+    tr:hover {
+        background-color: gray;
+    }
+    */
 
-td {
-    height: 30px;
-    vertical-align: bottom;
-}
-th, td {
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-}
-figure {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-ul {
-    padding-left: 10%;
-    text-align: left;
-}
+    td {
+        height: 30px;
+        vertical-align: bottom;
+    }
+    th, td {
+        border-top: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        border-left: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+    }
+    figure {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    ul {
+        padding-left: 10%;
+        text-align: left;
+    }
 
-.text_input {
-    font-family: "Courier", Courier, monospace;
-    text-align: center;
-}
-.list_input {
-    font-family: "Courier", Courier, monospace;
-    padding-left: 40%;
-}
-.center {
-    margin-left: auto;
-    margin-right: auto;
-}
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-.corner{
-    position:absolute;
-    top: 3%;
-    right: 2%;
-    font-size: 12px;
-}
-.legend_txt {
-    font-family: "Courier", Courier, monospace;
-    font-size: 14px;
-}
-.legend_img {
-    width: 35;
-}
-.footer {
-    font-family: 'Helvetica Neue';
-    font-size: 12px;
-    line-height: 20px;
-    margin-bottom: 10px;
-    color: #444444;
-    line-height: 20px;
-    padding: 16px 16px 16px 16px;
-    text-align: center;
-}
-.header {
-  font-family: "Courier", Courier, monospace;
-  display: flex;
-  align-items: center;
-  height: 60px;
-  justify-content: center;
-  border-bottom: 1px solid #E8E8E8;
-}
+    .text_input {
+        font-family: "Courier", Courier, monospace;
+        text-align: center;
+    }
+    .list_input {
+        font-family: "Courier", Courier, monospace;
+        padding-left: 40%;
+    }
+    .center {
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .corner{
+        position:absolute;
+        top: 3%;
+        right: 2%;
+        font-size: 12px;
+    }
+    .legend_txt {
+        font-family: "Courier", Courier, monospace;
+        font-size: 14px;
+    }
+    .legend_img {
+        width: 35;
+    }
+    .footer {
+        font-family: 'Helvetica Neue';
+        font-size: 12px;
+        line-height: 20px;
+        margin-bottom: 10px;
+        color: #444444;
+        line-height: 20px;
+        padding: 16px 16px 16px 16px;
+        text-align: center;
+    }
+    .header {
+      font-family: "Courier", Courier, monospace;
+      display: flex;
+      align-items: center;
+      height: 60px;
+      justify-content: center;
+      border-bottom: 1px solid #E8E8E8;
+    }
 
 </style>
-<style>
-    .owners {
-      width: 500px;
-      height: 300px;
-      border: 0px solid #ff9d2a;
-      margin: auto;
-      float: left;
-    }
-
-    span.own1 {
-      font-size: 13px;
-      width: 350px;
-      letter-spacing: 1px;
-      line-height: 20px;
-      position: absolute;
-      text-align: center;
-      text-transform: uppercase;
-      top: auto;
-      left: auto;
-      display: none;
-      padding: 0 0px;
-    }
-
-    p.own {
-      margin: 0px;
-      float: left;
-      position: relative;
-      cursor: pointer;
-    }
-
-    p.own:hover span {
-      display: block;
-      z-index: 1
-    }
-</style>
-
 <body onload="displayTimer()">
 <div class="corner">
     <i>
@@ -161,7 +125,7 @@ ul {
     <tr>
         <td><p style="margin-left: 25%"> {{ key }} </p></td>
         <td><p style="text-align:center"> {{ value[0] }} </p></td>
-        <td style='border:none;'><p class="own">&nbsp;&nbsp;&nbsp;&#9432;<span class="own1">{{ value[1] }}</span></p></td>
+        <td style='border:none;'><p style="cursor: pointer;" title=" {{ value[1]|join(', ') }} ">&nbsp;&nbsp;&nbsp;&#9432;</p></td>
     </tr>
     {% endfor %}
     </tbody>
