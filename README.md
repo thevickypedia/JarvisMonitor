@@ -24,4 +24,4 @@ Before making any changes to the `main` branch:
 - Status Page: [Health][2]
 
 [1]: https://github.com/thevickypedia/Jarvis
-[2]: https://jarvis.vigneshrao.com
+[2]: https://health.jarvis.services
