@@ -22,6 +22,8 @@ Before making any changes to the `main` branch:
 ## References
 - Source Repo: [Jarvis][1]
 - Status Page: [Health][2]
+- Internal Preview: [Preview][3]
 
 [1]: https://github.com/thevickypedia/Jarvis
 [2]: https://health.jarvis.services
+[3]: https://htmlpreview.github.io/?https://github.com/thevickypedia/JarvisMonitor/blob/docs/docs/index.html
