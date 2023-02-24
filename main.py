@@ -1,23 +1,20 @@
 import os
 import string
-import time
+from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Thread
-from typing import Dict, Union, NoReturn
+from typing import Dict, Union, NoReturn, Tuple, List
 
 import jinja2
 import psutil
 import yaml
-from gmailconnector.send_email import SendEmail
 
-from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule
-from helper import check_cpu_util
+from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
+from models.constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule
+from models.helper import check_cpu_util, send_email
 
-if os.path.isfile(os.path.join('docs', 'CNAME')):
-    with open(os.path.join('docs', 'CNAME')) as f:
-        webpage = f.read()
-else:
-    webpage = None
+STATUS_DICT = {}
 
 
 def get_data() -> Union[Dict[str, int], None]:
@@ -26,21 +23,6 @@ def get_data() -> Union[Dict[str, int], None]:
         with open(FILE_PATH) as file:
             data = yaml.load(stream=file, Loader=yaml.FullLoader) or {}
         return data
-
-
-def all_pids_are_red(status: dict) -> bool:
-    """Checks condition for all PIDs being red and returns a boolean flag."""
-    return len(set(list(zip(*status.values()))[0])) == 1 and set(list(zip(*status.values()))[0]) == {ColorCode.red}
-
-
-def main_process_is_red(status: dict) -> bool:
-    """Checks condition for main process being red and returns a boolean flag."""
-    return status["Jarvis"][0] == ColorCode.red
-
-
-def some_pids_are_red(status: dict) -> bool:
-    """Checks condition for one or more sub-processes being red and returns a boolean flag."""
-    return ColorCode.red in list(zip(*status.values()))[0]
 
 
 def publish_docs(status: dict = None) -> NoReturn:
@@ -72,7 +54,7 @@ def publish_docs(status: dict = None) -> NoReturn:
         if len(status) == 1:  # Limited mode
             t_desc = "<b>Description:</b> Jarvis is running in limited mode. " \
                      "All offline communicators and home automations are currently unavailable."
-    with open('web_template.html') as web_temp:
+    with open(os.path.join('templates', 'web_template.html')) as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
@@ -81,66 +63,29 @@ def publish_docs(status: dict = None) -> NoReturn:
         file.write(content)
 
 
-def send_email(status: dict = None) -> None:
-    """Sends an email notification if Jarvis is down."""
-    if not status:
-        LOGGER.warning("Jarvis is in maintenance mode.")
-        return
-    if all_pids_are_red(status=status):
-        state = 'issue'
-        subject = f"Service disrupted by an external force - {DATETIME}"
-    elif main_process_is_red(status=status):
-        state = 'notice'
-        subject = f"Main functionality degraded - {DATETIME}"
-    elif some_pids_are_red(status=status):
-        state = 'warning'
-        subject = f"Some components degraded - {DATETIME}"
+def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
+    """Classify all processes into good, bad and evil."""
+    process, proc_impact = data_tuple
+    func_name = process.func  # noqa
+    if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
+        if issue := check_cpu_util(process=process):
+            LOGGER.warning(f"{func_name} [{process.pid}] is INTENSE")
+            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+            STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact + list(issue.items())]
+        else:
+            LOGGER.info(f"{func_name} [{process.pid}] is HEALTHY")
+            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+            STATUS_DICT[func_name] = [ColorCode.green, proc_impact]
     else:
-        LOGGER.critical("`notify` flag was set to True without any components being affected.")
-        return
-    if os.path.isfile(NOTIFICATION):
-        with open(NOTIFICATION) as file:
-            data = yaml.load(stream=file, Loader=yaml.FullLoader)
-        if data.get(state) and time.time() - data[state] < 3_600:
-            LOGGER.info("Last email was sent within an hour.")
-            return
-    try:
-        email_obj = SendEmail()
-    except ValueError as error:
-        LOGGER.critical(error)
-        return
-    auth = email_obj.authenticate
-    if not auth.ok:
-        LOGGER.critical(auth.body)
-        return
-    LOGGER.info("Sending email")
-    with open('email_template.html') as email_temp:
-        template_data = email_temp.read()
-    template = jinja2.Template(template_data)
-    content = template.render(result=status, webpage=webpage)
-    response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor")
-    if response.ok:
-        LOGGER.info("Status report has been sent.")
-        with open(NOTIFICATION, 'w') as file:
-            yaml.dump(data={state: time.time()}, stream=file)
-    else:
-        LOGGER.critical("CRITICAL::FAILED TO SEND STATUS REPORT!!")
+        LOGGER.critical(f"{func_name} [{process.pid}] is NOT HEALTHY")
+        func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+        STATUS_DICT[func_name] = [ColorCode.red, proc_impact]
+        raise Exception  # Only to indicate, notify flag has to be flipped
 
 
-def main() -> None:
-    """Checks the health of all processes in the mapping and actions accordingly."""
-    if skip_schedule == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info(f"Schedule ignored at {skip_schedule!r}")
-        return
-    LOGGER.info(f"Monitoring health check at: {DATETIME}")
-    status = {}
-    notify = False
-    data = get_data()
-    if not data:
-        publish_docs()
-        return
+def extract_proc_info(data: Dict) -> Generator[psutil.Process, List[str]]:
+    """Extract process information from PID and yield the process and process impact."""
     for func_name, proc_info in data.items():
-        # Implement multi-threading to speed up checks
         pid, proc_impact = proc_info
         try:
             process = psutil.Process(pid=pid)
@@ -150,25 +95,35 @@ def main() -> None:
             continue
         else:
             process.func = func_name
-        if psutil.pid_exists(pid) and process.status() == psutil.STATUS_RUNNING:
-            if issue := check_cpu_util(process=process):
-                LOGGER.info(f"{func_name} [{pid}] is INTENSE")
-                func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
-                status[func_name] = [ColorCode.yellow, proc_impact + list(issue.items())]
-            else:
-                LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
-                func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
-                status[func_name] = [ColorCode.green, proc_impact]
-        else:
-            LOGGER.critical(f"{func_name} [{pid}] is NOT HEALTHY")
-            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
-            status[func_name] = [ColorCode.red, proc_impact]
+        yield process, proc_impact
+
+
+def main() -> None:
+    """Checks the health of all processes in the mapping and actions accordingly."""
+    if skip_schedule == datetime.now().strftime("%I:%M %p"):
+        LOGGER.info(f"Schedule ignored at {skip_schedule!r}")
+        return
+    LOGGER.info(f"Monitoring health check at: {DATETIME}")
+    if not (data := get_data()):
+        publish_docs()
+        return
+    notify = False
+    data_tup = list(extract_proc_info(data=data))
+    futures = {}
+    executor = ThreadPoolExecutor(max_workers=len(data_tup))
+    with executor:
+        for iterator in data_tup:
+            future = executor.submit(classify_processes, iterator)
+            futures[future] = iterator
+    for future in as_completed(futures):
+        if future.exception():
+            LOGGER.error(f'Thread processing for {iterator!r} received an exception: {future.exception()}')
             notify = True
     if notify:
-        Thread(target=send_email, kwargs={"status": status}).start()
+        Thread(target=send_email, kwargs={"status": STATUS_DICT}).start()
     elif os.path.isfile(NOTIFICATION):
         os.remove(NOTIFICATION)
-    publish_docs(status=status)
+    publish_docs(status=STATUS_DICT)
 
 
 if __name__ == '__main__':

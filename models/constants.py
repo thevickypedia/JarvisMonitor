@@ -56,3 +56,9 @@ except ValueError as error:
 FILE_PATH = os.environ.get("FILE_PATH") or \
             os.environ.get("file_path") or \
             os.path.join("Jarvis", "fileio", "processes.yaml")
+
+if os.path.isfile(os.path.join('docs', 'CNAME')):
+    with open(os.path.join('docs', 'CNAME')) as f:
+        webpage = f.read()
+else:
+    webpage = None
