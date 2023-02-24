@@ -13,6 +13,7 @@ class ColorCode:
     red: str = "&#128308;"  # large green circle
     green: str = "&#128994;"  # large red circle
     blue: str = "&#128309;"  # large blue circle
+    yellow: str = "&#128993;"  # large yellow circle
 
 
 if not os.path.isdir('logs'):

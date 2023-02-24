@@ -11,6 +11,7 @@ import yaml
 from gmailconnector.send_email import SendEmail
 
 from constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule
+from helper import check_cpu_util
 
 if os.path.isfile(os.path.join('docs', 'CNAME')):
     with open(os.path.join('docs', 'CNAME')) as f:
@@ -25,14 +26,6 @@ def get_data() -> Union[Dict[str, int], None]:
         with open(FILE_PATH) as file:
             data = yaml.load(stream=file, Loader=yaml.FullLoader) or {}
         return data
-
-
-def is_running(pid) -> bool:
-    """Checks if the process is running."""
-    try:
-        return psutil.Process(pid=pid).status() == psutil.STATUS_RUNNING
-    except psutil.Error as error:
-        LOGGER.error(error)
 
 
 def all_pids_are_red(status: dict) -> bool:
@@ -147,14 +140,25 @@ def main() -> None:
         publish_docs()
         return
     for func_name, proc_info in data.items():
+        # Implement multi-threading to speed up checks
         pid, proc_impact = proc_info
-        if not isinstance(pid, int):
+        try:
+            process = psutil.Process(pid=pid)
+        except psutil.Error as error:
+            LOGGER.error(error)
             LOGGER.warning(f"{func_name} [{pid}] is invalid.")
             continue
-        if psutil.pid_exists(pid) and is_running(pid):
-            LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
-            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
-            status[func_name] = [ColorCode.green, proc_impact]
+        else:
+            process.func = func_name
+        if psutil.pid_exists(pid) and process.status() == psutil.STATUS_RUNNING:
+            if issue := check_cpu_util(process=process):
+                LOGGER.info(f"{func_name} [{pid}] is INTENSE")
+                func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+                status[func_name] = [ColorCode.yellow, proc_impact + list(issue.items())]
+            else:
+                LOGGER.info(f"{func_name} [{pid}] is HEALTHY")
+                func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
+                status[func_name] = [ColorCode.green, proc_impact]
         else:
             LOGGER.critical(f"{func_name} [{pid}] is NOT HEALTHY")
             func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
