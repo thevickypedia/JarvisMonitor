@@ -70,15 +70,12 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
     if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
         if issue := check_cpu_util(process=process):
             LOGGER.warning(f"{func_name} [{process.pid}] is INTENSE")
-            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
             STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact + list(issue.items())]
         else:
             LOGGER.info(f"{func_name} [{process.pid}] is HEALTHY")
-            func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
             STATUS_DICT[func_name] = [ColorCode.green, proc_impact]
     else:
         LOGGER.critical(f"{func_name} [{process.pid}] is NOT HEALTHY")
-        func_name = string.capwords(func_name.replace('_', ' ')).replace('api', 'API')
         STATUS_DICT[func_name] = [ColorCode.red, proc_impact]
         raise Exception  # Only to indicate, notify flag has to be flipped
 
@@ -103,27 +100,35 @@ def main() -> None:
     if skip_schedule == datetime.now().strftime("%I:%M %p"):
         LOGGER.info(f"Schedule ignored at {skip_schedule!r}")
         return
-    LOGGER.info(f"Monitoring health check at: {DATETIME}")
+    LOGGER.info(f"Monitoring processes health at: {DATETIME}")
     if not (data := get_data()):
         publish_docs()
         return
     notify = False
-    data_tup = list(extract_proc_info(data=data))
     futures = {}
-    executor = ThreadPoolExecutor(max_workers=len(data_tup))
+    executor = ThreadPoolExecutor(max_workers=len(data))
     with executor:
-        for iterator in data_tup:
+        for iterator in extract_proc_info(data):
             future = executor.submit(classify_processes, iterator)
             futures[future] = iterator
     for future in as_completed(futures):
         if future.exception():
             LOGGER.error(f'Thread processing for {iterator!r} received an exception: {future.exception()}')
             notify = True
+    data_keys = sorted(data.keys())
+    stat_keys = sorted(STATUS_DICT.keys())
+    if data_keys != stat_keys:
+        missing_key = set(data_keys).difference(stat_keys)
+        for key in missing_key:
+            pid, impact = data[key]
+            STATUS_DICT[key] = [ColorCode.red, ["INVALID PROCESS ID\n"] + impact]
+            notify = True
+    translate = {string.capwords(k.replace('_', ' ')).replace('api', 'API'): v for k, v in STATUS_DICT.items()}
     if notify:
-        Thread(target=send_email, kwargs={"status": STATUS_DICT}).start()
+        Thread(target=send_email, kwargs={"status": translate}).start()
     elif os.path.isfile(NOTIFICATION):
         os.remove(NOTIFICATION)
-    publish_docs(status=STATUS_DICT)
+    publish_docs(status=translate)
 
 
 if __name__ == '__main__':
