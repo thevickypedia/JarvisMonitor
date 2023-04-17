@@ -10,6 +10,12 @@ Before making any changes to the `main` branch:
 - Cron entry should be commented
 - Main branch should be free of any commits made on `docs` branch
 
+If git push stops working on crontab:
+- Use the following command to authenticate using `SSH` instead of `https`
+```shell
+git remote set-url origin git@github.com:thevickypedia/JarvisMonitor.git
+```
+
 ## Sample Report
 | Process Name   |  Status   |
 |----------------|:---------:|
