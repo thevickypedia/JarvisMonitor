@@ -3,7 +3,7 @@ Monitor that runs in the background to report the health status of Jarvis and it
 
 ### Sample Crontab Entry
 ```bash
-* * * * * cd $HOME/JarvisMonitor && bash run.sh >> monitor.log
+* * * * * cd ~/JarvisMonitor && bash run.sh >> monitor.log
 ```
 
 Before making any changes to the `main` branch:

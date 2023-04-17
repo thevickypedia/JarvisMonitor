@@ -2,10 +2,10 @@ import os
 import time
 from typing import Dict
 
+import gmailconnector
 import jinja2
 import psutil
 import yaml
-from gmailconnector.send_email import SendEmail
 
 from models.conditions import all_pids_are_red, some_pids_are_red, main_process_is_red
 from models.constants import NOTIFICATION, DATETIME, LOGGER, webpage
@@ -52,7 +52,7 @@ def send_email(status: dict = None) -> None:
             LOGGER.info("Last email was sent within an hour.")
             return
     try:
-        email_obj = SendEmail()
+        email_obj = gmailconnector.SendEmail()
     except ValueError as error:
         LOGGER.critical(error)
         return

@@ -31,11 +31,12 @@ fi
 echo -e "\nRunning monitor script"
 python main.py
 
-echo -e "Adding all changes to stage"
+echo -e "\nAdding all changes to stage"
 git add --all
 
-echo -e "Running git commit"
+echo -e "\nRunning git commit"
 git commit -m "Updated as of $dt"
 
-echo -e "Pushing changes to origin"
+echo -e "\nPushing changes to origin"
 git push -f origin docs
+echo -e "\nCompleted task"

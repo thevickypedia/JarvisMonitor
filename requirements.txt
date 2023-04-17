@@ -2,4 +2,4 @@ psutil==5.9.4
 PyYAML==6.0
 Jinja2==3.1.2
 python-dotenv==1.0.0
-gmail-connector>=0.6.0
+gmail-connector>=0.8
