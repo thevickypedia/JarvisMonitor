@@ -48,7 +48,7 @@ def send_email(status: dict = None) -> None:
     if os.path.isfile(NOTIFICATION):
         with open(NOTIFICATION) as file:
             data = yaml.load(stream=file, Loader=yaml.FullLoader)
-        if data.get(state) and time.time() - data[state] < 3_600:
+        if data.get(state) and time.time() - data[state] < 43_200:
             LOGGER.info("Last email was sent within an hour.")
             return
     try:
