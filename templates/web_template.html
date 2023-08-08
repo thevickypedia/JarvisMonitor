@@ -114,17 +114,17 @@
     <img style="text-align:center" src="{{ STATUS_FILE }}" alt="status" width="100"/>
     <h2 class="text_input">{{ STATUS_TEXT }}</h2>
 </div>
-<table class="center" style='font-family:"Courier", Courier, monospace; font-size:100%; width:30%'>
+<table class="center" style='font-family:"Courier", Courier, monospace; font-size:100%;'>
     <thead>
     <tr>
-        <th style="width:60%">Process Name</th>
+        <th>Process Name</th>
         <th>Status</th>
     </tr>
     </thead>
     <tbody>
     {% for key, value in result.items() %}
     <tr>
-        <td><p style="margin-left: 25%"> {{ key }} </p></td>
+        <td><p style="text-align:center"> {{ key }} </p></td>
         <td><p style="text-align:center"> {{ value[0] }} </p></td>
         <td style='border:none;'><p style="cursor: pointer;" title=" {{ value[1]|join(', ') }} ">&nbsp;&nbsp;&nbsp;&#9432;</p></td>
     </tr>
