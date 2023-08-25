@@ -47,7 +47,9 @@ def publish_docs(status: dict = None) -> NoReturn:
         stat_text = "Some components are degraded"
         for key in status.keys():
             if status[key][0] == ColorCode.red:
-                l_desc += f"<b>Impacted by {key.lower()}:</b><br><ul><li>{'</li><li>'.join(status[key][1])}</li></ul>"
+                l_desc += f"<b>Impacted by {key.lower()}:</b><br>" \
+                          f"<br>&nbsp;&nbsp;&nbsp;&nbsp;{status[key][1][0]}" \
+                          f"<ul><li>{'</li><li>'.join(status[key][1][1:])}</li></ul>"
     else:  # all green
         stat_text = "Jarvis is up and running"
         stat_file = "ok.png"
@@ -70,7 +72,9 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
     if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
         if issue := check_cpu_util(process=process):
             LOGGER.warning(f"{func_name} [{process.pid}] is INTENSE")
-            STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact + list(issue.items())]
+            # combine list of string with list of tuples
+            proc_impact.append('\n\n' + ', '.join(f"{key}: {value}" for key, value in issue.items()))
+            STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact]
         else:
             LOGGER.info(f"{func_name} [{process.pid}] is HEALTHY")
             STATUS_DICT[func_name] = [ColorCode.green, proc_impact]
@@ -80,7 +84,7 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
         raise Exception  # Only to indicate, notify flag has to be flipped
 
 
-def extract_proc_info(data: Dict) -> Generator[psutil.Process, List[str]]:
+def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]:
     """Extract process information from PID and yield the process and process impact."""
     for func_name, proc_info in data.items():
         pid, proc_impact = proc_info
@@ -106,8 +110,7 @@ def main() -> None:
         return
     notify = False
     futures = {}
-    executor = ThreadPoolExecutor(max_workers=len(data))
-    with executor:
+    with ThreadPoolExecutor(max_workers=len(data)) as executor:
         for iterator in extract_proc_info(data):
             future = executor.submit(classify_processes, iterator)
             futures[future] = iterator
