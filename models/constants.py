@@ -5,7 +5,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path=os.environ.get('env_file', os.environ.get('ENV_FILE', ".env")))
 
 
 class ColorCode:
@@ -62,3 +62,6 @@ if os.path.isfile(os.path.join('docs', 'CNAME')):
         webpage = f.read()
 else:
     webpage = None
+
+recipient = os.environ.get("RECIPIENT") or \
+            os.environ.get("recipient")

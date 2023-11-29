@@ -8,7 +8,7 @@ import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, some_pids_are_red, main_process_is_red
-from models.constants import NOTIFICATION, DATETIME, LOGGER, webpage
+from models.constants import NOTIFICATION, DATETIME, LOGGER, webpage, recipient
 
 
 def check_cpu_util(process: psutil.Process) -> Dict:
@@ -61,7 +61,7 @@ def send_email(status: dict = None) -> None:
         template_data = email_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, webpage=webpage)
-    response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor")
+    response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor", recipient=recipient)
     if response.ok:
         LOGGER.info("Status report has been sent.")
         with open(NOTIFICATION, 'w') as file:

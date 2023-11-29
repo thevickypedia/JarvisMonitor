@@ -4,7 +4,7 @@ from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Thread
-from typing import Dict, Union, NoReturn, Tuple, List
+from typing import Dict, Tuple, List
 
 import jinja2
 import psutil
@@ -17,15 +17,16 @@ from models.helper import check_cpu_util, send_email
 STATUS_DICT = {}
 
 
-def get_data() -> Union[Dict[str, int], None]:
+def get_data() -> Dict[str, Dict[int, List[str]]]:
     """Get processes mapping from Jarvis."""
-    if os.path.isfile(FILE_PATH):
+    try:
         with open(FILE_PATH) as file:
-            data = yaml.load(stream=file, Loader=yaml.FullLoader) or {}
-        return data
+            return yaml.load(stream=file, Loader=yaml.FullLoader)
+    except FileNotFoundError:
+        pass
 
 
-def publish_docs(status: dict = None) -> NoReturn:
+def publish_docs(status: dict = None) -> None:
     """Updates the docs/index.html file."""
     LOGGER.info("Updating index.html")
     t_desc, l_desc = "", ""
@@ -87,16 +88,16 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
 def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]:
     """Extract process information from PID and yield the process and process impact."""
     for func_name, proc_info in data.items():
-        pid, proc_impact = proc_info
-        try:
-            process = psutil.Process(pid=pid)
-        except psutil.Error as error:
-            LOGGER.error(error)
-            LOGGER.warning(f"{func_name} [{pid}] is invalid.")
-            continue
-        else:
-            process.func = func_name
-        yield process, proc_impact
+        for pid, proc_impact in proc_info.items():
+            try:
+                process = psutil.Process(pid=pid)
+            except psutil.Error as error:
+                LOGGER.error(error)
+                LOGGER.warning(f"{func_name} [{pid}] is invalid.")
+                continue
+            else:
+                process.func = func_name
+            yield process, proc_impact
 
 
 def main() -> None:
@@ -123,9 +124,9 @@ def main() -> None:
     if data_keys != stat_keys:
         missing_key = set(data_keys).difference(stat_keys)
         for key in missing_key:
-            pid, impact = data[key]
-            STATUS_DICT[key] = [ColorCode.red, ["INVALID PROCESS ID\n"] + impact]
-            notify = True
+            for pid, impact in data[key].items():
+                STATUS_DICT[key] = [ColorCode.red, ["INVALID PROCESS ID\n"] + impact]
+                notify = True
     translate = {string.capwords(k.replace('_', ' ')).replace('api', 'API'): v for k, v in STATUS_DICT.items()}
     if notify:
         Thread(target=send_email, kwargs={"status": translate}).start()
