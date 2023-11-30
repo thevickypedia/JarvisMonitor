@@ -97,7 +97,7 @@ def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]
                 continue
             else:
                 process.func = func_name
-            yield process, proc_impact
+            yield process, sorted(proc_impact, key=len)
 
 
 def main() -> None:
@@ -127,7 +127,8 @@ def main() -> None:
             for pid, impact in data[key].items():
                 STATUS_DICT[key] = [ColorCode.red, ["INVALID PROCESS ID\n"] + impact]
                 notify = True
-    translate = {string.capwords(k.replace('_', ' ')).replace('api', 'API'): v for k, v in STATUS_DICT.items()}
+    translate = {string.capwords(str(k).replace('_', ' ')).replace('Api', 'API'): STATUS_DICT[k]
+                 for k in sorted(STATUS_DICT, key=len)}
     if notify:
         Thread(target=send_email, kwargs={"status": translate}).start()
     elif os.path.isfile(NOTIFICATION):
