@@ -31,5 +31,5 @@ git remote set-url origin git@github.com:thevickypedia/JarvisMonitor.git
 - Internal Preview: [Preview][3]
 
 [1]: https://github.com/thevickypedia/Jarvis
-[2]: https://health.jarvis.services
+[2]: https://jarvis-health.vigneshrao.com
 [3]: https://htmlpreview.github.io/?https://github.com/thevickypedia/JarvisMonitor/blob/docs/docs/index.html
