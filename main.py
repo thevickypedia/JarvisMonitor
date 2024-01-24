@@ -23,7 +23,7 @@ def get_data() -> Dict[str, Dict[int, List[str]]]:
         with open(FILE_PATH) as file:
             return yaml.load(stream=file, Loader=yaml.FullLoader)
     except FileNotFoundError:
-        pass
+        LOGGER.warning("Feed file is missing, assuming maintenance mode.")
 
 
 def publish_docs(status: dict = None) -> None:
