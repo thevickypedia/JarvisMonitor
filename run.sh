@@ -6,7 +6,7 @@ echo -e '\n\n*******************************************************************
 echo "                               $dt"
 echo -e '***************************************************************************************************\n'
 
-echo -e "\nCheckout and rebase to docs branch"
+echo -e "Checkout and rebase to docs branch"
 git checkout -b docs
 git pull --rebase
 
@@ -15,20 +15,19 @@ if [[ -f "venv/bin/activate" ]]; then
   source venv/bin/activate
 fi
 
-echo -e "\nRunning monitor script"
+echo -e "Running monitor script"
 python main.py
 
-echo -e "\nChecking for changes"
 if [[ -n $(git status -s) ]]; then
-  echo -e "\nAdding all changes to stage"
+  echo -e "Adding all changes to stage"
   git add --all
 
-  echo -e "\nRunning git commit"
+  echo -e "Running git commit"
   git commit -m "Updated as of $dt"
 
   echo -e "\nPushing changes to origin"
   git push -f origin docs
-  echo -e "\nCompleted task"
+  echo -e "Task completed."
 else
-  echo -e "\nNo changes detected. Task completed."
+  echo -e "No changes detected. Task completed."
 fi
