@@ -1,27 +1,14 @@
 #!/bin/bash
 # git push origin --delete docs  # Delete remote branch
 dt=$(date '+%d/%m/%Y %H:%M:%S %Z %z')
-default=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
 
 echo -e '\n\n***************************************************************************************************'
 echo "                               $dt"
 echo -e '***************************************************************************************************\n'
 
-echo -e "\nSwitching to $default branch"
-git checkout "$default"
-echo -e "\nRetrieving latest commit info from $default branch"
-git pull --rebase
-sha=$(git log --format="%H" -n 1)
-msg=$(git log --oneline -1)
-# msg=$(git log -1 --pretty=%B)  # Get commit message in multiple lines
-
-echo -e "\nLatest commit on $default branch: $sha - $msg"
-
-echo -e "\nResetting docs branch to match $default"
-git branch -D docs # Delete local branch to avoid overlap errors
+echo -e "\nCheckout and rebase to docs branch"
 git checkout -b docs
-git reset --hard "$sha"
-# git push -f origin docs  # Instant reset
+git pull --rebase
 
 if [[ -f "venv/bin/activate" ]]; then
   echo 'Activating virtual env'
