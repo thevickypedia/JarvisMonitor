@@ -2,6 +2,8 @@ __pycache__/
 venv/
 .idea/
 logs/
+.DS_Store
 *.yaml
 *.env
 *.html
+*.log
