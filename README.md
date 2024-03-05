@@ -17,13 +17,12 @@ git remote set-url origin git@github.com:thevickypedia/JarvisMonitor.git
 ```
 
 ## Sample Report
-| Process Name   |  Status   |
-|----------------|:---------:|
-| Automator      | &#128994; |
-| Fastapi        | &#128994; |
-| Jarvis         | &#128994; |
-| Telegram       | &#128994; |
-| Wifi Connector | &#128308; |
+|      Process Name      |  Status   |
+|:----------------------:|:---------:|
+|         Jarvis         | &#128994; |
+|       Jarvis API       | &#128994; |
+|    Background Tasks    | &#128994; |
+|  Speech Synthesis API  | &#128308; |
 
 ## References
 - Source Repo: [Jarvis][1]

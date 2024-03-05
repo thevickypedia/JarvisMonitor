@@ -5,5 +5,4 @@ logs/
 .DS_Store
 *.yaml
 *.env
-*.html
 *.log
