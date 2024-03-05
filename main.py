@@ -60,7 +60,7 @@ def publish_docs(status: dict = None) -> None:
     with open(os.path.join('templates', 'web_template.html')) as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
-    content = template.render(result=status, DATETIME=DATETIME, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
+    content = template.render(result=status, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
                               TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc)
     with open(os.path.join('docs', 'index.html'), 'w') as file:
         file.write(content)
