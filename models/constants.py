@@ -19,7 +19,8 @@ class ColorCode:
 if not os.path.isdir('logs'):
     os.mkdir('logs')
 
-DATETIME = datetime.now().strftime("%B %d, %Y - %I:%M %p %Z") + " " + time.strftime("%Z %z")
+TIMEZONE = time.strftime("%Z %z")
+DATETIME = datetime.now().strftime("%B %d, %Y - %I:%M %p") + " " + TIMEZONE
 
 DEFAULT_LOG_FORMAT = logging.Formatter(
     datefmt='%b-%d-%Y %I:%M:%S %p',

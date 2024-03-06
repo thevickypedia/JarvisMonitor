@@ -11,7 +11,7 @@ import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
-from models.constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule
+from models.constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule, TIMEZONE
 from models.helper import check_cpu_util, send_email
 
 STATUS_DICT = {}
@@ -61,7 +61,7 @@ def publish_docs(status: dict = None) -> None:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
-                              TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc)
+                              TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc, TIMEZONE=TIMEZONE)
     with open(os.path.join('docs', 'index.html'), 'w') as file:
         file.write(content)
 
