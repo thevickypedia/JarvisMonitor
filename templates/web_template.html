@@ -222,12 +222,13 @@
                     minute: 'numeric',
                     hour12: true  // to be extra safe
                 });
-                console.log(`Last status change: ${formattedDate}`)
-
-                // Display the latest commit information in a specific element
                 document.getElementById("latestCommit").textContent = formattedDate;
             })
-            .catch(error => console.error('Error fetching data from GitHub API:', error));
+            .catch(error => {
+                console.error('Error fetching data from GitHub API:', error);
+                let formattedDate = `<a href=https://github.com/${owner}/${repo}/commits/${branch}>Unknown</a>`
+                document.getElementById('latestCommit').innerHTML = 'Last Commit: ' + formattedDate;
+            });
     });
 </script>
 </html>
