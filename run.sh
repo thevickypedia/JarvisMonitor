@@ -8,7 +8,7 @@ echo -e '***********************************************************************
 
 echo -e "Checkout and rebase to docs branch"
 git checkout -b docs
-git pull --rebase
+git pull origin docs
 
 if [[ -f "venv/bin/activate" ]]; then
   echo 'Activating virtual env'
