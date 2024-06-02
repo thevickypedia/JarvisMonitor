@@ -19,7 +19,7 @@ def check_cpu_util(process: psutil.Process) -> Dict:
     open_files = len(process.open_files())
     info_dict = {'cpu': cpu, 'threads': threads, 'open_files': open_files}
     LOGGER.info({f"{name} [{process.pid}]": info_dict})
-    if cpu > 10 or threads > 25 or open_files > 50:  # current threshold for Jarvis
+    if cpu > 10 or open_files > 50:  # current threshold for Jarvis
         LOGGER.critical(f"{name} [{process.pid}] should be optimized")
         return info_dict
 
