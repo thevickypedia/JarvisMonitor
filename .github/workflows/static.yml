@@ -1,13 +1,18 @@
 # Simple workflow for deploying static content to GitHub Pages
 # Reference: https://github.com/actions/starter-workflows/blob/main/pages/static.yml
 # To override default page build: Settings -> Pages -> Source -> GitHub Actions (Instead of Deploy from a branch)
+# To enable github-pages on docs branch: Settings -> Environments -> github-pages -> Add 'docs' to allowed
 
 name: Deploy static content to Pages
 
 on:
   # Runs on push targeting the docs branch
   push:
-    branches: docs
+    branches:
+      - docs
+    # Run this workflow only when changes are found in 'docs' directory
+    paths:
+      - docs/*
   # Run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -33,7 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
