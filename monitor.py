@@ -11,16 +11,17 @@ import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
-from models.constants import FILE_PATH, NOTIFICATION, DATETIME, LOGGER, ColorCode, skip_schedule, TIMEZONE
+from models.constants import LOGGER, ColorCode, Constants
 from models.helper import check_cpu_util, send_email
 
 STATUS_DICT = {}
+constants = Constants()
 
 
 def get_data() -> Dict[str, Dict[int, List[str]]]:
     """Get processes mapping from Jarvis."""
     try:
-        with open(FILE_PATH) as file:
+        with open(constants.FILE_PATH) as file:
             return yaml.load(stream=file, Loader=yaml.FullLoader)
     except FileNotFoundError:
         LOGGER.warning("Feed file is missing, assuming maintenance mode.")
@@ -61,7 +62,7 @@ def publish_docs(status: dict = None) -> None:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
-                              TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc, TIMEZONE=TIMEZONE)
+                              TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc, TIMEZONE=constants.TIMEZONE)
     with open(os.path.join('docs', 'index.html'), 'w') as file:
         file.write(content)
 
@@ -102,10 +103,10 @@ def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]
 
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
-    if skip_schedule == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info(f"Schedule ignored at {skip_schedule!r}")
+    if constants.skip_schedule == datetime.now().strftime("%I:%M %p"):
+        LOGGER.info(f"Schedule ignored at {constants.skip_schedule!r}")
         return
-    LOGGER.info(f"Monitoring processes health at: {DATETIME}")
+    LOGGER.info(f"Monitoring processes health at: {constants.DATETIME}")
     if not (data := get_data()):
         publish_docs()
         return
@@ -131,10 +132,6 @@ def main() -> None:
                  for k in sorted(STATUS_DICT, key=len)}
     if notify:
         Thread(target=send_email, kwargs={"status": translate}).start()
-    elif os.path.isfile(NOTIFICATION):
-        os.remove(NOTIFICATION)
+    elif os.path.isfile(constants.NOTIFICATION):
+        os.remove(constants.NOTIFICATION)
     publish_docs(status=translate)
-
-
-if __name__ == '__main__':
-    main()

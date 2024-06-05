@@ -8,7 +8,7 @@ import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, some_pids_are_red, main_process_is_red
-from models.constants import NOTIFICATION, DATETIME, LOGGER, webpage, recipient
+from models.constants import LOGGER, Constants
 
 
 def check_cpu_util(process: psutil.Process) -> Dict:
@@ -31,18 +31,18 @@ def send_email(status: dict = None) -> None:
         return
     if all_pids_are_red(status=status):
         state = 'issue'
-        subject = f"Service disrupted by an external force - {DATETIME}"
+        subject = f"Service disrupted by an external force - {Constants.DATETIME}"
     elif main_process_is_red(status=status):
         state = 'notice'
-        subject = f"Main functionality degraded - {DATETIME}"
+        subject = f"Main functionality degraded - {Constants.DATETIME}"
     elif some_pids_are_red(status=status):
         state = 'warning'
-        subject = f"Some components degraded - {DATETIME}"
+        subject = f"Some components degraded - {Constants.DATETIME}"
     else:
         LOGGER.critical("`notify` flag was set to True without any components being affected.")
         return
-    if os.path.isfile(NOTIFICATION):
-        with open(NOTIFICATION) as file:
+    if os.path.isfile(Constants.NOTIFICATION):
+        with open(Constants.NOTIFICATION) as file:
             data = yaml.load(stream=file, Loader=yaml.FullLoader)
         if data.get(state) and time.time() - data[state] < 43_200:
             LOGGER.info("Last email was sent within an hour.")
@@ -60,11 +60,14 @@ def send_email(status: dict = None) -> None:
     with open(os.path.join('templates', 'email_template.html')) as email_temp:
         template_data = email_temp.read()
     template = jinja2.Template(template_data)
-    content = template.render(result=status, webpage=webpage)
-    response = email_obj.send_email(subject=subject, html_body=content, sender="JarvisMonitor", recipient=recipient)
+    content = template.render(result=status, webpage=Constants.webpage)
+    response = email_obj.send_email(subject=subject,
+                                    html_body=content,
+                                    sender="JarvisMonitor",
+                                    recipient=Constants.recipient)
     if response.ok:
         LOGGER.info("Status report has been sent.")
-        with open(NOTIFICATION, 'w') as file:
+        with open(Constants.NOTIFICATION, 'w') as file:
             yaml.dump(data={state: time.time()}, stream=file)
     else:
         LOGGER.critical("CRITICAL::FAILED TO SEND STATUS REPORT!!")
