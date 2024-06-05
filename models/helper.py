@@ -7,8 +7,8 @@ import jinja2
 import psutil
 import yaml
 
-from models.conditions import all_pids_are_red, some_pids_are_red, main_process_is_red
-from models.constants import LOGGER, Constants
+from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
+from models.constants import LOGGER, static
 
 
 def check_cpu_util(process: psutil.Process) -> Dict:
@@ -17,7 +17,7 @@ def check_cpu_util(process: psutil.Process) -> Dict:
     cpu = process.cpu_percent(interval=3)
     threads = process.num_threads()
     open_files = len(process.open_files())
-    info_dict = {'cpu': cpu, 'threads': threads, 'open_files': open_files}
+    info_dict = {"cpu": cpu, "threads": threads, "open_files": open_files}
     LOGGER.info({f"{name} [{process.pid}]": info_dict})
     if cpu > 10 or open_files > 50:  # current threshold for Jarvis
         LOGGER.critical(f"{name} [{process.pid}] should be optimized")
@@ -30,19 +30,21 @@ def send_email(status: dict = None) -> None:
         LOGGER.warning("Jarvis is in maintenance mode.")
         return
     if all_pids_are_red(status=status):
-        state = 'issue'
-        subject = f"Service disrupted by an external force - {Constants.DATETIME}"
+        state = "issue"
+        subject = f"Service disrupted by an external force - {static.DATETIME}"
     elif main_process_is_red(status=status):
-        state = 'notice'
-        subject = f"Main functionality degraded - {Constants.DATETIME}"
+        state = "notice"
+        subject = f"Main functionality degraded - {static.DATETIME}"
     elif some_pids_are_red(status=status):
-        state = 'warning'
-        subject = f"Some components degraded - {Constants.DATETIME}"
+        state = "warning"
+        subject = f"Some components degraded - {static.DATETIME}"
     else:
-        LOGGER.critical("`notify` flag was set to True without any components being affected.")
+        LOGGER.critical(
+            "`notify` flag was set to True without any components being affected."
+        )
         return
-    if os.path.isfile(Constants.NOTIFICATION):
-        with open(Constants.NOTIFICATION) as file:
+    if os.path.isfile(static.NOTIFICATION):
+        with open(static.NOTIFICATION) as file:
             data = yaml.load(stream=file, Loader=yaml.FullLoader)
         if data.get(state) and time.time() - data[state] < 43_200:
             LOGGER.info("Last email was sent within an hour.")
@@ -57,17 +59,20 @@ def send_email(status: dict = None) -> None:
         LOGGER.critical(auth.body)
         return
     LOGGER.info("Sending email")
-    with open(os.path.join('templates', 'email_template.html')) as email_temp:
+    with open(os.path.join("templates", "email_template.html")) as email_temp:
         template_data = email_temp.read()
     template = jinja2.Template(template_data)
-    content = template.render(result=status, webpage=Constants.webpage)
-    response = email_obj.send_email(subject=subject,
-                                    html_body=content,
-                                    sender="JarvisMonitor",
-                                    recipient=Constants.recipient)
+    content = template.render(result=status, webpage=static.webpage)
+    response = email_obj.send_email(
+        subject=subject,
+        html_body=content,
+        sender="JarvisMonitor",
+        recipient=static.recipient,
+    )
     if response.ok:
         LOGGER.info("Status report has been sent.")
-        with open(Constants.NOTIFICATION, 'w') as file:
+        with open(static.NOTIFICATION, "w") as file:
             yaml.dump(data={state: time.time()}, stream=file)
+            file.flush()
     else:
         LOGGER.critical("CRITICAL::FAILED TO SEND STATUS REPORT!!")

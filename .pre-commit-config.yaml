@@ -1,0 +1,44 @@
+fail_fast: true
+exclude: ^(notebooks/|scripts/|.github/|docs/)
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-byte-order-marker
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-shebang-scripts-are-executable
+      - id: check-merge-conflict
+      - id: check-vcs-permalinks
+      - id: debug-statements
+      - id: detect-aws-credentials
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+        - id: black
+          exclude: docs_gen/
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-docstrings
+          - flake8-sfs
+        args: [ --max-line-length=120, --extend-ignore=SFS3 D107 SFS301 D100 D104 D401 SFS101 SFS201 D412 ]
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: [ --profile, black ]

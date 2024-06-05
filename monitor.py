@@ -4,24 +4,23 @@ from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Thread
-from typing import Dict, Tuple, List
+from typing import Dict, List, Tuple
 
 import jinja2
 import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
-from models.constants import LOGGER, ColorCode, Constants
+from models.constants import LOGGER, ColorCode, static
 from models.helper import check_cpu_util, send_email
 
 STATUS_DICT = {}
-constants = Constants()
 
 
 def get_data() -> Dict[str, Dict[int, List[str]]]:
     """Get processes mapping from Jarvis."""
     try:
-        with open(constants.FILE_PATH) as file:
+        with open(static.FILE_PATH) as file:
             return yaml.load(stream=file, Loader=yaml.FullLoader)
     except FileNotFoundError:
         LOGGER.warning("Feed file is missing, assuming maintenance mode.")
@@ -49,22 +48,33 @@ def publish_docs(status: dict = None) -> None:
         stat_text = "Some components are degraded"
         for key in status.keys():
             if status[key][0] == ColorCode.red:
-                l_desc += f"<b>Impacted by {key.lower()}:</b><br>" \
-                          f"<br>&nbsp;&nbsp;&nbsp;&nbsp;{status[key][1][0]}" \
-                          f"<ul><li>{'</li><li>'.join(status[key][1][1:])}</li></ul>"
+                l_desc += (
+                    f"<b>Impacted by {key.lower()}:</b><br>"
+                    f"<br>&nbsp;&nbsp;&nbsp;&nbsp;{status[key][1][0]}"
+                    f"<ul><li>{'</li><li>'.join(status[key][1][1:])}</li></ul>"
+                )
     else:  # all green
         stat_text = "Jarvis is up and running"
         stat_file = "ok.png"
         if len(status) == 1:  # Limited mode
-            t_desc = "<b>Description:</b> Jarvis is running in limited mode. " \
-                     "All offline communicators and home automations are currently unavailable."
-    with open(os.path.join('templates', 'web_template.html')) as web_temp:
+            t_desc = (
+                "<b>Description:</b> Jarvis is running in limited mode. "
+                "All offline communicators and home automations are currently unavailable."
+            )
+    with open(os.path.join("templates", "web_template.html")) as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
-    content = template.render(result=status, STATUS_FILE=stat_file, STATUS_TEXT=stat_text,
-                              TEXT_DESCRIPTION=t_desc, LIST_DESCRIPTION=l_desc, TIMEZONE=constants.TIMEZONE)
-    with open(os.path.join('docs', 'index.html'), 'w') as file:
+    content = template.render(
+        result=status,
+        STATUS_FILE=stat_file,
+        STATUS_TEXT=stat_text,
+        TEXT_DESCRIPTION=t_desc,
+        LIST_DESCRIPTION=l_desc,
+        TIMEZONE=static.TIMEZONE,
+    )
+    with open(static.INDEX_FILE, "w") as file:
         file.write(content)
+        file.flush()
 
 
 def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
@@ -75,7 +85,9 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
         if issue := check_cpu_util(process=process):
             LOGGER.warning(f"{func_name} [{process.pid}] is INTENSE")
             # combine list of string with list of tuples
-            proc_impact.append('\n\n' + ', '.join(f"{key}: {value}" for key, value in issue.items()))
+            proc_impact.append(
+                "\n\n" + ", ".join(f"{key}: {value}" for key, value in issue.items())
+            )
             STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact]
         else:
             LOGGER.info(f"{func_name} [{process.pid}] is HEALTHY")
@@ -103,10 +115,10 @@ def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]
 
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
-    if constants.skip_schedule == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info(f"Schedule ignored at {constants.skip_schedule!r}")
+    if static.skip_schedule == datetime.now().strftime("%I:%M %p"):
+        LOGGER.info(f"Schedule ignored at {static.skip_schedule!r}")
         return
-    LOGGER.info(f"Monitoring processes health at: {constants.DATETIME}")
+    LOGGER.info(f"Monitoring processes health at: {static.DATETIME}")
     if not (data := get_data()):
         publish_docs()
         return
@@ -118,7 +130,9 @@ def main() -> None:
             futures[future] = iterator
     for future in as_completed(futures):
         if future.exception():
-            LOGGER.error(f'Thread processing for {iterator!r} received an exception: {future.exception()}')
+            LOGGER.error(
+                f"Thread processing for {iterator!r} received an exception: {future.exception()}"
+            )
             notify = True
     data_keys = sorted(data.keys())
     stat_keys = sorted(STATUS_DICT.keys())
@@ -128,10 +142,12 @@ def main() -> None:
             for pid, impact in data[key].items():
                 STATUS_DICT[key] = [ColorCode.red, ["INVALID PROCESS ID\n"] + impact]
                 notify = True
-    translate = {string.capwords(str(k).replace('_', ' ')).replace('Api', 'API'): STATUS_DICT[k]
-                 for k in sorted(STATUS_DICT, key=len)}
+    translate = {
+        string.capwords(str(k).replace("_", " ")).replace("Api", "API"): STATUS_DICT[k]
+        for k in sorted(STATUS_DICT, key=len)
+    }
     if notify:
         Thread(target=send_email, kwargs={"status": translate}).start()
-    elif os.path.isfile(constants.NOTIFICATION):
-        os.remove(constants.NOTIFICATION)
+    elif os.path.isfile(static.NOTIFICATION):
+        os.remove(static.NOTIFICATION)
     publish_docs(status=translate)
