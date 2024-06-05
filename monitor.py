@@ -83,17 +83,17 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
     func_name = process.func  # noqa
     if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
         if issue := check_cpu_util(process=process):
-            LOGGER.warning(f"{func_name} [{process.pid}] is INTENSE")
+            LOGGER.info("%s [%d] is INTENSE", func_name, process.pid)
             # combine list of string with list of tuples
             proc_impact.append(
                 "\n\n" + ", ".join(f"{key}: {value}" for key, value in issue.items())
             )
             STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact]
         else:
-            LOGGER.info(f"{func_name} [{process.pid}] is HEALTHY")
+            LOGGER.info("%s [%d] is HEALTHY", func_name, process.pid)
             STATUS_DICT[func_name] = [ColorCode.green, proc_impact]
     else:
-        LOGGER.critical(f"{func_name} [{process.pid}] is NOT HEALTHY")
+        LOGGER.critical("%s [%d] is NOT HEALTHY", func_name, process.pid)
         STATUS_DICT[func_name] = [ColorCode.red, proc_impact]
         raise Exception  # Only to indicate, notify flag has to be flipped
 
@@ -106,7 +106,7 @@ def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]
                 process = psutil.Process(pid=pid)
             except psutil.Error as error:
                 LOGGER.error(error)
-                LOGGER.warning(f"{func_name} [{pid}] is invalid.")
+                LOGGER.warning("%s [%d] is invalid.", func_name, pid)
                 continue
             else:
                 process.func = func_name
@@ -116,9 +116,9 @@ def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
     if static.skip_schedule == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info(f"Schedule ignored at {static.skip_schedule!r}")
+        LOGGER.info("Schedule ignored at '%s'", static.skip_schedule)
         return
-    LOGGER.info(f"Monitoring processes health at: {static.DATETIME}")
+    LOGGER.info("Monitoring processes health at: %s", static.DATETIME)
     if not (data := get_data()):
         publish_docs()
         return
