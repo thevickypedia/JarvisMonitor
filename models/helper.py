@@ -8,7 +8,7 @@ import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
-from models.constants import LOGGER, static
+from models.constants import LOGGER, env, static
 
 
 def check_cpu_util(process: psutil.Process) -> Dict:
@@ -26,6 +26,9 @@ def check_cpu_util(process: psutil.Process) -> Dict:
 
 def send_email(status: dict = None) -> None:
     """Sends an email notification if Jarvis is down."""
+    if not all((env.gmail_user, env.gmail_pass, env.recipient)):
+        LOGGER.warning("Not all env vars are present for sending an email!!")
+        return
     if not status:
         LOGGER.warning("Jarvis is in maintenance mode.")
         return
@@ -50,7 +53,9 @@ def send_email(status: dict = None) -> None:
             LOGGER.info("Last email was sent within an hour.")
             return
     try:
-        email_obj = gmailconnector.SendEmail()
+        email_obj = gmailconnector.SendEmail(
+            gmail_user=env.gmail_user, gmail_pass=env.gmail_pass
+        )
     except ValueError as error:
         LOGGER.critical(error)
         return
@@ -67,7 +72,7 @@ def send_email(status: dict = None) -> None:
         subject=subject,
         html_body=content,
         sender="JarvisMonitor",
-        recipient=static.recipient,
+        recipient=env.recipient,
     )
     if response.ok:
         LOGGER.info("Status report has been sent.")

@@ -1,17 +1,16 @@
 import os
 import string
-from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from threading import Thread
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import jinja2
 import psutil
 import yaml
 
 from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
-from models.constants import LOGGER, ColorCode, static
+from models.constants import LOGGER, color_codes, env, static
 from models.helper import check_cpu_util, send_email
 
 STATUS_DICT = {}
@@ -20,7 +19,7 @@ STATUS_DICT = {}
 def get_data() -> Dict[str, Dict[int, List[str]]]:
     """Get processes mapping from Jarvis."""
     try:
-        with open(static.FILE_PATH) as file:
+        with open(env.source_map) as file:
             return yaml.load(stream=file, Loader=yaml.FullLoader)
     except FileNotFoundError:
         LOGGER.warning("Feed file is missing, assuming maintenance mode.")
@@ -31,7 +30,7 @@ def publish_docs(status: dict = None) -> None:
     LOGGER.info("Updating index.html")
     t_desc, l_desc = "", ""
     if not status:  # process map is missing
-        status = {"Jarvis": [ColorCode.blue, ["Maintenance"]]}
+        status = {"Jarvis": [color_codes.blue, ["Maintenance"]]}
         stat_file = "maintenance.png"
         stat_text = "Process Map Unreachable"
         t_desc = "<b>Description:</b> Source feed is missing, Jarvis has been stopped for maintenance."
@@ -47,7 +46,7 @@ def publish_docs(status: dict = None) -> None:
         stat_file = "warning.png"
         stat_text = "Some components are degraded"
         for key in status.keys():
-            if status[key][0] == ColorCode.red:
+            if status[key][0] == color_codes.red:
                 l_desc += (
                     f"<b>Impacted by {key.lower()}:</b><br>"
                     f"<br>&nbsp;&nbsp;&nbsp;&nbsp;{status[key][1][0]}"
@@ -77,9 +76,8 @@ def publish_docs(status: dict = None) -> None:
         file.flush()
 
 
-def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
+def classify_processes(process: psutil.Process, proc_impact: List[str]):
     """Classify all processes into good, bad and evil."""
-    process, proc_impact = data_tuple
     func_name = process.func  # noqa
     if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
         if issue := check_cpu_util(process=process):
@@ -88,35 +86,34 @@ def classify_processes(data_tuple: Tuple[psutil.Process, List[str]]):
             proc_impact.append(
                 "\n\n" + ", ".join(f"{key}: {value}" for key, value in issue.items())
             )
-            STATUS_DICT[func_name] = [ColorCode.yellow, proc_impact]
+            STATUS_DICT[func_name] = [color_codes.yellow, proc_impact]
         else:
             LOGGER.info("%s [%d] is HEALTHY", func_name, process.pid)
-            STATUS_DICT[func_name] = [ColorCode.green, proc_impact]
+            STATUS_DICT[func_name] = [color_codes.green, proc_impact]
     else:
         LOGGER.critical("%s [%d] is NOT HEALTHY", func_name, process.pid)
-        STATUS_DICT[func_name] = [ColorCode.red, proc_impact]
+        STATUS_DICT[func_name] = [color_codes.red, proc_impact]
         raise Exception  # Only to indicate, notify flag has to be flipped
 
 
-def extract_proc_info(data: Dict) -> Generator[Tuple[psutil.Process, List[str]]]:
-    """Extract process information from PID and yield the process and process impact."""
-    for func_name, proc_info in data.items():
-        for pid, proc_impact in proc_info.items():
-            try:
-                process = psutil.Process(pid=pid)
-            except psutil.Error as error:
-                LOGGER.error(error)
-                LOGGER.warning("%s [%d] is invalid.", func_name, pid)
-                continue
-            else:
-                process.func = func_name
-            yield process, sorted(proc_impact, key=len)
+def extract_proc_info(func_name: str, proc_info: Dict[int, List[str]]):
+    """Extract process information from PID and classify the process to update status dictionary."""
+    for pid, impact in proc_info.items():
+        try:
+            process = psutil.Process(pid=pid)
+        except psutil.Error as error:
+            LOGGER.error(error)
+            LOGGER.warning("%s [%d] is invalid.", func_name, pid)
+            raise Exception  # Only to indicate, notify flag
+        else:
+            process.func = func_name
+        classify_processes(process, sorted(impact, key=len))
 
 
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
-    if static.skip_schedule == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info("Schedule ignored at '%s'", static.skip_schedule)
+    if env.skip_schedule == datetime.now().strftime("%I:%M %p"):
+        LOGGER.info("Schedule ignored at '%s'", env.skip_schedule)
         return
     LOGGER.info("Monitoring processes health at: %s", static.DATETIME)
     if not (data := get_data()):
@@ -124,14 +121,16 @@ def main() -> None:
         return
     notify = False
     futures = {}
-    with ThreadPoolExecutor(max_workers=len(data)) as executor:
-        for iterator in extract_proc_info(data):
-            future = executor.submit(classify_processes, iterator)
-            futures[future] = iterator
+    with ThreadPoolExecutor(max_workers=len(data) * 2) as executor:
+        for key, value in data.items():
+            future = executor.submit(
+                extract_proc_info, **dict(func_name=key, proc_info=value)
+            )
+            futures[future] = key
     for future in as_completed(futures):
         if future.exception():
             LOGGER.error(
-                f"Thread processing for {iterator!r} received an exception: {future.exception()}"
+                f"Thread processing for {futures[future]!r} received an exception: {future.exception()}"
             )
             notify = True
     data_keys = sorted(data.keys())
@@ -140,7 +139,7 @@ def main() -> None:
         missing_key = set(data_keys).difference(stat_keys)
         for key in missing_key:
             for pid, impact in data[key].items():
-                STATUS_DICT[key] = [ColorCode.red, ["INVALID PROCESS ID\n"] + impact]
+                STATUS_DICT[key] = [color_codes.red, ["INVALID PROCESS ID\n"] + impact]
                 notify = True
     translate = {
         string.capwords(str(k).replace("_", " ")).replace("Api", "API"): STATUS_DICT[k]

@@ -5,10 +5,10 @@ import os
 import requests
 
 import monitor
-from models.constants import LOGGER, static
+from models.constants import LOGGER, env, static
 
 SESSION = requests.Session()
-SESSION.headers = {"Authorization": "token " + static.GIT_TOKEN}
+SESSION.headers = {"Authorization": "token " + env.git_token}
 
 
 def head_branch() -> bool:
@@ -17,19 +17,23 @@ def head_branch() -> bool:
     resp = SESSION.get(branch_url)
     LOGGER.debug(resp.json())
     if resp.status_code == 404:
-        base_branch = SESSION.get(f"{static.BASE_URL}/git/refs/heads/{static.DEFAULT_BRANCH}")
+        base_branch = SESSION.get(
+            f"{static.BASE_URL}/git/refs/heads/{static.DEFAULT_BRANCH}"
+        )
         base_branch_sha = base_branch.json()["object"]["sha"]
         data = {"ref": f"refs/heads/{static.DOCS_BRANCH}", "sha": base_branch_sha}
         resp = SESSION.post(f"{static.BASE_URL}/git/refs", json=data)
         if resp.ok:
-            LOGGER.info("Branch %s created successfully", static.DOCS_BRANCH)
+            LOGGER.info("Branch '%s' created successfully", static.DOCS_BRANCH)
             LOGGER.debug(resp.json())
             return True
         else:
-            LOGGER.error("Failed to create branch %s: %s", static.DOCS_BRANCH, resp.text)
+            LOGGER.error(
+                "Failed to create branch '%s': %s", static.DOCS_BRANCH, resp.text
+            )
             LOGGER.error(resp.json())
     elif resp.status_code == 200:
-        LOGGER.info("Branch %s already exists", static.DOCS_BRANCH)
+        LOGGER.info("Branch '%s' already exists", static.DOCS_BRANCH)
         return True
     else:
         LOGGER.error("Failed to check branch '%s': %s", static.DOCS_BRANCH, resp.text)
