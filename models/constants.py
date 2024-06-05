@@ -49,6 +49,11 @@ class Constants:
     NOTIFICATION = os.path.join(os.getcwd(), "last_notify.yaml")
     GIT_TOKEN = getenv("git_token", "")
     INDEX_FILE = os.path.join("docs", "index.html")
+    BASE_URL = "https://api.github.com/repos/thevickypedia/JarvisMonitor"
+    INDEX_URL = f"{BASE_URL}/contents/docs/index.html"
+    DOCS_BRANCH = "docs"
+    DEFAULT_BRANCH = "main"
+    COMMIT_MESSAGE = f"Updated as of {DATETIME}"
 
     write = "".join(["*" for _ in range(120)])
     with open(FILENAME, "a+") as file:

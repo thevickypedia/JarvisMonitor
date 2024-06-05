@@ -3,22 +3,10 @@ Monitor that runs in the background to report the health status of Jarvis and it
 
 ### Sample Crontab Entry
 ```bash
-* * * * * cd ~/JarvisMonitor && bash run.sh >> monitor.log
+* * * * * cd ~/JarvisMonitor && python run.py
 ```
 
-Before making any changes to the `main` branch:
-- Cron entry should be commented
-- Main branch should be free of any commits made on `docs` branch
-- Existing `docs` branch should be deleted from both local and remote
-
-> Shell script will trigger [`main.py`][4] everytime, and pushes any changes to `docs` branch.<br>
-> GitHub workflow trigger is set to trigger on `push` against `docs` branch which will rebuild GitHub pages.
-
-If git push stops working on crontab:
-- Use the following command to authenticate using `SSH` instead of `https`
-```shell
-git remote set-url origin git@github.com:thevickypedia/JarvisMonitor.git
-```
+> GitHub workflow trigger is set to trigger on `push` against `docs` branch which will build GitHub pages.
 
 ## Sample Report
 |      Process Name      |  Status   |
@@ -36,4 +24,3 @@ git remote set-url origin git@github.com:thevickypedia/JarvisMonitor.git
 [1]: https://github.com/thevickypedia/Jarvis
 [2]: https://jarvis-health.vigneshrao.com
 [3]: https://htmlpreview.github.io/?https://github.com/thevickypedia/JarvisMonitor/blob/docs/docs/index.html
-[4]: https://github.com/thevickypedia/JarvisMonitor/blob/main/main.py
