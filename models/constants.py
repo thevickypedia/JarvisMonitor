@@ -93,7 +93,7 @@ class Constants(BaseModel):
     INDEX_FILE: Union[FilePath, NewPath] = os.path.join("docs", "index.html")
     BASE_URL: HttpUrl = "https://api.github.com/repos/thevickypedia/JarvisMonitor"
     DOCS_BRANCH: str = "docs"
-    INDEX_URL: str = f"{BASE_URL}/contents/{DOCS_BRANCH}/index.html"
+    INDEX_URL: str = f"{BASE_URL}/contents/docs/index.html"
     DEFAULT_BRANCH: str = "main"
     COMMIT_MESSAGE: str = f"Updated as of {DATETIME}"
     webpage: Union[str, None] = get_webpage()

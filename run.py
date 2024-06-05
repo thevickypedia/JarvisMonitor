@@ -28,16 +28,32 @@ def head_branch() -> bool:
             LOGGER.debug(resp.json())
             return True
         else:
-            LOGGER.error(
+            LOGGER.critical(
                 "Failed to create branch '%s': %s", static.DOCS_BRANCH, resp.text
             )
-            LOGGER.error(resp.json())
+            LOGGER.critical(resp.json())
     elif resp.status_code == 200:
         LOGGER.info("Branch '%s' already exists", static.DOCS_BRANCH)
         return True
     else:
-        LOGGER.error("Failed to check branch '%s': %s", static.DOCS_BRANCH, resp.text)
-        LOGGER.error(resp.json())
+        LOGGER.critical(
+            "Failed to check branch '%s': %s", static.DOCS_BRANCH, resp.text
+        )
+        LOGGER.critical(resp.json())
+
+
+def git_push(sha: str, content: str) -> requests.Response:
+    """Performs git push and returns the response object."""
+    LOGGER.info("Pushing changes to GitHub")
+    payload = {
+        "message": static.COMMIT_MESSAGE,
+        "branch": static.DOCS_BRANCH,
+        "content": content,
+    }
+    if sha:
+        payload["sha"] = sha
+    SESSION.headers["Content-Type"] = "application/json"
+    return SESSION.put(static.INDEX_URL, data=json.dumps(payload))
 
 
 def push_to_github():
@@ -48,9 +64,9 @@ def push_to_github():
     except FileNotFoundError as error:
         LOGGER.critical(error)
         return
-    if not head_branch():
-        return
     decoded_content = base64content.decode("utf-8")
+    # todo: check if there is an alternate to this
+    #   instead of checking the index file everytime, can it be cached locally?
     response = SESSION.get(f"{static.INDEX_URL}?ref={static.DOCS_BRANCH}")
     data = response.json()
     if response.ok:
@@ -62,21 +78,25 @@ def push_to_github():
         sha = None
         push = True
     if push:
-        LOGGER.info("Pushing changes to GitHub")
-        payload = {
-            "message": static.COMMIT_MESSAGE,
-            "branch": static.DOCS_BRANCH,
-            "content": decoded_content,
-        }
-        if sha:
-            payload["sha"] = sha
-        SESSION.headers["Content-Type"] = "application/json"
-        resp = SESSION.put(static.INDEX_URL, data=json.dumps(payload))
-        if resp.ok:
+        push_response = git_push(sha, decoded_content)
+        json_response = push_response.json()
+        if push_response.ok:
             LOGGER.info("Updated %s branch with changes", static.DOCS_BRANCH)
-            LOGGER.debug(resp.json())
+            LOGGER.debug(push_response.json())
+        elif (
+            push_response.status_code == 404
+            and json_response["message"].lower()
+            == f"branch {static.DOCS_BRANCH} not found"
+        ):
+            if head_branch():
+                retry_response = git_push(sha, decoded_content)
+                if retry_response.ok:
+                    LOGGER.info("Updated %s branch with changes", static.DOCS_BRANCH)
+                    LOGGER.debug(push_response.json())
+                else:
+                    LOGGER.critical("%s - %s", push_response.status_code, json_response)
         else:
-            LOGGER.error("%s - %s", resp.status_code, resp.json())
+            LOGGER.critical("%s - %s", push_response.status_code, json_response)
     else:
         LOGGER.info("Nothing to update")
     # Delete the file since there is no branch checkout happening
