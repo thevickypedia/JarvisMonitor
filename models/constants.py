@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from datetime import datetime
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -9,18 +10,6 @@ load_dotenv(dotenv_path=os.environ.get("env_file", os.environ.get("ENV_FILE", ".
 
 if not os.path.isdir("logs"):
     os.mkdir("logs")
-
-LOGGER = logging.getLogger("jarvis")
-DEFAULT_LOG_FORMAT = logging.Formatter(
-    datefmt="%b-%d-%Y %I:%M:%S %p",
-    fmt="%(asctime)s - %(levelname)s - [%(module)s:%(lineno)d] - %(funcName)s - %(message)s",
-)
-FILENAME = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
-HANDLER = logging.FileHandler(filename=FILENAME, mode="a")
-HANDLER.setFormatter(fmt=DEFAULT_LOG_FORMAT)
-
-LOGGER.addHandler(hdlr=HANDLER)
-LOGGER.setLevel(level=logging.INFO)
 
 
 class ColorCode:
@@ -32,9 +21,25 @@ class ColorCode:
     yellow: str = "&#128993;"  # large yellow circle
 
 
-def getenv(key: str, default: str) -> str:
+def getenv(key: str, default: Any) -> str:
     """Get env vars with both lower case or upper case."""
     return os.environ.get(key.lower()) or os.environ.get(key.upper()) or default
+
+
+LOGGER = logging.getLogger("jarvis")
+DEFAULT_LOG_FORMAT = logging.Formatter(
+    datefmt="%b-%d-%Y %I:%M:%S %p",
+    fmt="%(asctime)s - %(levelname)s - [%(module)s:%(lineno)d] - %(funcName)s - %(message)s",
+)
+FILENAME = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
+HANDLER = logging.FileHandler(filename=FILENAME, mode="a")
+HANDLER.setFormatter(fmt=DEFAULT_LOG_FORMAT)
+
+LOGGER.addHandler(hdlr=HANDLER)
+if getenv("debug", False):
+    LOGGER.setLevel(level=logging.DEBUG)
+else:
+    LOGGER.setLevel(level=logging.INFO)
 
 
 class Constants:
@@ -68,7 +73,7 @@ class Constants:
     try:
         datetime.strptime(skip_schedule, "%I:%M %p")  # Validate datetime format
     except ValueError as error:
-        LOGGER.error(error)
+        LOGGER.warning(error)
 
     FILE_PATH = getenv("file_path", os.path.join("Jarvis", "fileio", "processes.yaml"))
 

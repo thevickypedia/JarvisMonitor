@@ -15,6 +15,7 @@ def head_branch() -> bool:
     """Check and create head branch if needed."""
     branch_url = f"{static.BASE_URL}/git/refs/heads/{static.DOCS_BRANCH}"
     resp = SESSION.get(branch_url)
+    LOGGER.debug(resp.json())
     if resp.status_code == 404:
         base_branch = SESSION.get(f"{static.BASE_URL}/git/refs/heads/{static.DEFAULT_BRANCH}")
         base_branch_sha = base_branch.json()["object"]["sha"]
@@ -22,14 +23,17 @@ def head_branch() -> bool:
         resp = SESSION.post(f"{static.BASE_URL}/git/refs", json=data)
         if resp.ok:
             LOGGER.info("Branch %s created successfully", static.DOCS_BRANCH)
+            LOGGER.debug(resp.json())
             return True
         else:
             LOGGER.error("Failed to create branch %s: %s", static.DOCS_BRANCH, resp.text)
+            LOGGER.error(resp.json())
     elif resp.status_code == 200:
         LOGGER.info("Branch %s already exists", static.DOCS_BRANCH)
         return True
     else:
         LOGGER.error("Failed to check branch '%s': %s", static.DOCS_BRANCH, resp.text)
+        LOGGER.error(resp.json())
 
 
 def push_to_github():
@@ -65,7 +69,8 @@ def push_to_github():
         SESSION.headers["Content-Type"] = "application/json"
         resp = SESSION.put(static.INDEX_URL, data=json.dumps(payload))
         if resp.ok:
-            LOGGER.info(resp.json())
+            LOGGER.info("Updated %s branch with changes", static.DOCS_BRANCH)
+            LOGGER.debug(resp.json())
         else:
             LOGGER.error("%s - %s", resp.status_code, resp.json())
     else:
