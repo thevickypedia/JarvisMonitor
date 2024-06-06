@@ -33,7 +33,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: Ubuntu
+    runs-on: Darwin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
