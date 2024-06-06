@@ -1,6 +1,7 @@
 name: Delete docs branch
 
 on:
+  workflow_call:
   push:
     branches:
       - main

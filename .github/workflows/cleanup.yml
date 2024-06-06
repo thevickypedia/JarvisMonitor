@@ -6,6 +6,9 @@ on:
       # At 6 AM everyday
 
 jobs:
+  delete-docs:
+    uses:
+      ./.github/workflows/delete.yml
   coronation:
     runs-on: thevickypedia-default
     permissions:
