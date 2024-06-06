@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import subprocess
 
 import requests
 
@@ -56,6 +57,21 @@ def git_push(sha: str, content: str) -> requests.Response:
     return SESSION.put(static.INDEX_URL, data=json.dumps(payload))
 
 
+def git_pull() -> None:
+    """Runs git pull in a commandline."""
+    try:
+        result = subprocess.run(
+            ["git", "pull"], capture_output=True, text=True, shell=True
+        )
+    except (subprocess.SubprocessError, subprocess.CalledProcessError) as error:
+        LOGGER.error(error)
+    else:
+        if result.returncode == 0:
+            LOGGER.info(result.stdout)
+        else:
+            LOGGER.error(result.stderr)
+
+
 def push_to_github():
     """Commit and push to GitHub."""
     try:
@@ -65,18 +81,21 @@ def push_to_github():
         LOGGER.critical(error)
         return
     decoded_content = base64content.decode("utf-8")
-    # todo: check if there is an alternate to this
-    #   instead of checking the index file everytime, can it be cached locally?
-    response = SESSION.get(f"{static.INDEX_URL}?ref={static.DOCS_BRANCH}")
-    data = response.json()
-    if response.ok:
-        LOGGER.info("Fetch successful!")
-        sha = data["sha"]
-        push = decoded_content.strip() != data["content"].replace("\n", "").strip()
+    if env.check_existing:
+        response = SESSION.get(f"{static.INDEX_URL}?ref={static.DOCS_BRANCH}")
+        data = response.json()
+        if response.ok:
+            LOGGER.info("Fetch successful!")
+            sha = data["sha"]
+            # push only when there are changes
+            push = decoded_content.strip() != data["content"].replace("\n", "").strip()
+        else:
+            LOGGER.info("Creating a new file in %s branch", static.DOCS_BRANCH)
+            sha = None
+            push = True
     else:
-        LOGGER.info("Creating a new file in %s branch", static.DOCS_BRANCH)
-        sha = None
         push = True
+        sha = None
     if push:
         push_response = git_push(sha, decoded_content)
         json_response = push_response.json()
@@ -104,5 +123,6 @@ def push_to_github():
 
 
 if __name__ == "__main__":
+    git_pull()
     monitor.main()
     push_to_github()

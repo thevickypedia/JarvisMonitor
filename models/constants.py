@@ -36,6 +36,7 @@ class EnvConfig(BaseSettings):
     gmail_pass: Union[str, None] = None
     recipient: Union[EmailStr, None] = None
     skip_schedule: str = None
+    check_existing: bool = True
 
     class Config:
         """Environment variables configuration."""
