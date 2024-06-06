@@ -57,8 +57,12 @@ def get_origin_file() -> Tuple[bytes, str]:
         Returns a tuple of file content as bytes, and the commit SHA.
     """
     commit = REPOSITORY.commit(f"origin/{static.DOCS_BRANCH}")
-    file_content = (commit.tree / "docs/index.html").data_stream.read()
-    return base64.b64encode(file_content), commit.tree.hexsha
+    # The / operator is overloaded in GitPython to allow easy traversal of the tree structure
+    # The / expression navigates through the tree to find the file located at docs/index.html
+    target_file = (commit.tree / "docs/index.html")
+    file_content = target_file.data_stream.read()
+    file_sha = target_file.hexsha
+    return base64.b64encode(file_content), file_sha
 
 
 def push_to_github():
