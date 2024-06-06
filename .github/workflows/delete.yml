@@ -1,4 +1,4 @@
-name: Delete Docs Branch
+name: Delete docs branch
 
 on:
   push:
@@ -17,11 +17,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if git show-ref --verify --quiet refs/heads/docs; then
+          BRANCH_NAME="docs"
+          REPO="https://api.github.com/repos/${{ github.repository }}"
+
+          # Check if the branch exists
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "$REPO/branches/$BRANCH_NAME")
+
+          if [ $STATUS -eq 200 ]; then
+            # Branch exists, delete it
             curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
               -H "Accept: application/vnd.github.v3+json" \
-              https://api.github.com/repos/${{ github.repository }}/git/refs/heads/docs
+              "$REPO/git/refs/heads/$BRANCH_NAME"
+            echo "::notice title=Branch::Branch '$BRANCH_NAME' deleted."
           else
-            echo "Branch 'docs' does not exist."
+            echo "::notice title=Branch::Branch '$BRANCH_NAME' does not exist."
           fi
         shell: bash
