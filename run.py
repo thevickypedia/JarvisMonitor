@@ -1,9 +1,10 @@
 import base64
 import json
 import os
-import subprocess
+import pathlib
 
 import requests
+import git
 
 import monitor
 from models.constants import LOGGER, env, static
@@ -60,16 +61,11 @@ def git_push(sha: str, content: str) -> requests.Response:
 def git_pull() -> None:
     """Runs git pull in a commandline."""
     try:
-        result = subprocess.run(
-            ["git", "pull"], capture_output=True, text=True, shell=True
-        )
-    except (subprocess.SubprocessError, subprocess.CalledProcessError) as error:
+        github = git.Git(pathlib.Path(os.getcwd()).name)
+        result = github.pull('origin', 'main')
+        LOGGER.info(result)
+    except git.GitError as error:
         LOGGER.error(error)
-    else:
-        if result.returncode == 0:
-            LOGGER.info(result.stdout)
-        else:
-            LOGGER.error(result.stderr)
 
 
 def push_to_github():
@@ -123,6 +119,7 @@ def push_to_github():
 
 
 if __name__ == "__main__":
+    # todo: create new GH action to delete docs branch when main is pushed out
     git_pull()
     monitor.main()
     push_to_github()

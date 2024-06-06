@@ -1,24 +1,31 @@
 import logging
 import os
 import time
+import sys
 from datetime import datetime
 from typing import Union
 
 from pydantic import BaseModel, EmailStr, FilePath, HttpUrl, NewPath
 from pydantic_settings import BaseSettings
 
-LOGGER = logging.getLogger("jarvis")
-DEFAULT_LOG_FORMAT = logging.Formatter(
-    datefmt="%b-%d-%Y %I:%M:%S %p",
-    fmt="%(asctime)s - %(levelname)s - [%(module)s:%(lineno)d] - %(funcName)s - %(message)s",
-)
-LOG_FILE: str = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
-HANDLER = logging.FileHandler(filename=LOG_FILE, mode="a")
-HANDLER.setFormatter(fmt=DEFAULT_LOG_FORMAT)
-LOGGER.addHandler(hdlr=HANDLER)
+if sys.version_info.minor > 10:
+    from enum import StrEnum
+else:
+    from enum import Enum
 
-if not os.path.isdir("logs"):
-    os.mkdir("logs")
+    class StrEnum(str, Enum):
+        """Override for python 3.10 due to lack of StrEnum."""
+
+
+class LogOptions(StrEnum):
+    """Logging options.
+
+    >>> LogOptions
+
+    """
+
+    file: str = "file"
+    stdout: str = "stdout"
 
 
 class EnvConfig(BaseSettings):
@@ -31,6 +38,7 @@ class EnvConfig(BaseSettings):
     source_map: Union[FilePath, NewPath]
     git_token: str
 
+    log: LogOptions = LogOptions.file
     debug: bool = False
     gmail_user: Union[EmailStr, None] = None
     gmail_pass: Union[str, None] = None
@@ -57,6 +65,29 @@ class ColorCode(BaseModel):
     blue: str = "&#128309;"  # large blue circle
     yellow: str = "&#128993;"  # large yellow circle
 
+
+LOGGER = logging.getLogger("jarvis")
+DEFAULT_LOG_FORMAT = logging.Formatter(
+    datefmt="%b-%d-%Y %I:%M:%S %p",
+    fmt="%(asctime)s - %(levelname)s - [%(module)s:%(lineno)d] - %(funcName)s - %(message)s",
+)
+LOG_FILE: str = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
+if env.log == LogOptions.file:
+    if not os.path.isdir("logs"):
+        os.mkdir("logs")
+    HANDLER = logging.FileHandler(filename=LOG_FILE, mode="a")
+    write: str = "".join(["*" for _ in range(120)])
+    with open(LOG_FILE, "a+") as file:
+        file.seek(0)
+        if not file.read():
+            file.write(f"{write}\n")
+        else:
+            file.write(f"\n{write}\n")
+        file.flush()
+else:
+    HANDLER = logging.StreamHandler()
+HANDLER.setFormatter(fmt=DEFAULT_LOG_FORMAT)
+LOGGER.addHandler(hdlr=HANDLER)
 
 if env.debug:
     LOGGER.setLevel(level=logging.DEBUG)
@@ -102,12 +133,3 @@ class Constants(BaseModel):
 
 static = Constants()
 color_codes = ColorCode()
-
-write: str = "".join(["*" for _ in range(120)])
-with open(LOG_FILE, "a+") as file:
-    file.seek(0)
-    if not file.read():
-        file.write(f"{write}\n")
-    else:
-        file.write(f"\n{write}\n")
-    file.flush()
