@@ -1,7 +1,7 @@
 import logging
 import os
-import time
 import sys
+import time
 from datetime import datetime
 from typing import Union
 
