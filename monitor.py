@@ -115,6 +115,9 @@ def main() -> None:
     if env.skip_schedule == datetime.now().strftime("%I:%M %p"):
         LOGGER.info("Schedule ignored at '%s'", env.skip_schedule)
         return
+    # Enforce check_existing flag to False every 1 hour
+    if datetime.now().minute == 0:
+        env.check_existing = False
     LOGGER.info("Monitoring processes health at: %s", static.DATETIME)
     if not (data := get_data()):
         publish_docs()

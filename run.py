@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import pathlib
+from datetime import datetime
 from typing import Tuple
 
 import git
@@ -96,10 +97,11 @@ def push_to_github():
         if env.check_existing:
             push = local_content != remote_content
         else:
-            LOGGER.warning(
-                "Check existing is set to False, this will push to origin regardless of changes!"
-            )
             push = True
+            if datetime.now().minute != 0:
+                LOGGER.warning(
+                    "Check existing is set to False, this will push to origin regardless of changes!"
+                )
     except KeyError as error:
         LOGGER.warning(error)  # file is missing in docs branch
         LOGGER.warning("Creating a new file in %s branch", static.DOCS_BRANCH)
