@@ -90,6 +90,7 @@ def push_to_github():
             sha = None
             push = True
     else:
+        LOGGER.warning("Check existing is set to False, this will push to origin regardless of changes!")
         push = True
         sha = None
     if push:
@@ -119,7 +120,6 @@ def push_to_github():
 
 
 if __name__ == "__main__":
-    # todo: create new GH action to delete docs branch when main is pushed out
     git_pull()
     monitor.main()
     push_to_github()
