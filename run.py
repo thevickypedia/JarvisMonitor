@@ -21,10 +21,14 @@ def head_branch() -> None:
     if f"origin/{static.DOCS_BRANCH}" in remote_branches:
         LOGGER.info(f"Branch '{static.DOCS_BRANCH}' already exists remotely.")
         return
+    if static.DOCS_BRANCH in REPOSITORY.heads:
+        LOGGER.info(f"Local branch '{static.DOCS_BRANCH}' exists but not on remote. Deleting local branch.")
+        REPOSITORY.delete_head(static.DOCS_BRANCH, force=True)
     base_branch = REPOSITORY.heads[REPOSITORY.active_branch.name]
     new_branch = REPOSITORY.create_head(static.DOCS_BRANCH, base_branch.commit.hexsha)
     origin = REPOSITORY.remote(name="origin")
     origin.push(new_branch.name)
+    LOGGER.info(f"Branch '{static.DOCS_BRANCH}' created and pushed to remote.")
 
 
 def git_push(sha: str, content: str) -> requests.Response:
