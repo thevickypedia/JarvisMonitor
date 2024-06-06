@@ -31,8 +31,8 @@ jobs:
             curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
               -H "Accept: application/vnd.github.v3+json" \
               "$REPO/git/refs/heads/$BRANCH_NAME"
-            echo "::notice title=Branch::Branch '$BRANCH_NAME' deleted."
+            echo "::notice title=Status::Branch '$BRANCH_NAME' has been deleted."
           else
-            echo "::notice title=Branch::Branch '$BRANCH_NAME' does not exist."
+            echo "::notice title=Status::Branch '$BRANCH_NAME' does not exist."
           fi
         shell: bash
