@@ -76,23 +76,23 @@ def push_to_github():
     except FileNotFoundError as error:
         LOGGER.critical(error)
         return
+    # todo: replace API calls with GitPython
     decoded_content = base64content.decode("utf-8")
-    if env.check_existing:
-        response = SESSION.get(f"{static.INDEX_URL}?ref={static.DOCS_BRANCH}")
-        data = response.json()
-        if response.ok:
-            LOGGER.info("Fetch successful!")
-            sha = data["sha"]
-            # push only when there are changes
+    response = SESSION.get(f"{static.INDEX_URL}?ref={static.DOCS_BRANCH}")
+    data = response.json()
+    if response.ok:
+        LOGGER.info("Fetch successful!")
+        sha = data["sha"]
+        # push only when there are changes
+        if env.check_existing:
             push = decoded_content.strip() != data["content"].replace("\n", "").strip()
         else:
-            LOGGER.info("Creating a new file in %s branch", static.DOCS_BRANCH)
-            sha = None
+            LOGGER.warning("Check existing is set to False, this will push to origin regardless of changes!")
             push = True
     else:
-        LOGGER.warning("Check existing is set to False, this will push to origin regardless of changes!")
-        push = True
+        LOGGER.info("Creating a new file in %s branch", static.DOCS_BRANCH)
         sha = None
+        push = True
     if push:
         push_response = git_push(sha, decoded_content)
         json_response = push_response.json()
