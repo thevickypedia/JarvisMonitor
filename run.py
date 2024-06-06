@@ -75,22 +75,26 @@ def get_origin_file() -> Tuple[bytes, str]:
     return base64.b64encode(file_content), file_sha
 
 
-def push_to_github():
-    """Commit and push to GitHub."""
+def get_index_file() -> bytes:
+    """Reads the index file and returns the data as bytes."""
     try:
         with open(static.INDEX_FILE, "rb") as file:
-            base64content = base64.b64encode(file.read())
+            return base64.b64encode(file.read())
     except FileNotFoundError as error:
         LOGGER.critical(error)
+
+
+def push_to_github():
+    """Commit and push to GitHub."""
+    if local_content := get_index_file():
+        head_branch()
+    else:
         return
-    head_branch()
-    local_content = base64content.decode("utf-8")
     try:
         remote_content, sha = get_origin_file()
-        LOGGER.info("Fetch successful!")
         # push only when there are changes
         if env.check_existing:
-            push = local_content.strip() != remote_content.strip()
+            push = local_content != remote_content
         else:
             LOGGER.warning(
                 "Check existing is set to False, this will push to origin regardless of changes!"
@@ -109,7 +113,7 @@ def push_to_github():
         push = True
         sha = None
     if push:
-        push_response = git_push(sha, local_content)
+        push_response = git_push(sha, local_content.decode("utf-8"))
         json_response = push_response.json()
         if push_response.ok:
             LOGGER.info("Updated %s branch with changes", static.DOCS_BRANCH)

@@ -30,6 +30,8 @@ Monitor that runs in the background to report the health status of Jarvis and it
 
 **Optional**
 - **debug** - Any value to enable debug mode. Disabled by default.
+- **git_user** - GitHub username to authenticate GitPython.
+- **git_owner** - GitHub owner for the account.
 - **git_token** - GitHub PAT to push changes using GH API.
 - **gmail_user** - Gmail username to authenticate the account.
 - **gmail_pass** - gmail password to authenticate the account.
