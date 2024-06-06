@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import pathlib
 from typing import Tuple
 
 import git
@@ -11,7 +12,14 @@ from models.constants import LOGGER, env, static
 
 SESSION = requests.Session()
 SESSION.headers = {"Authorization": "token " + env.git_token}
-REPOSITORY = git.Repo(os.getcwd())
+repo = pathlib.Path(os.getcwd())
+REPOSITORY = git.Repo(repo)
+REMOTE_URL_WITH_PAT = (
+    f"https://{env.git_user}:{env.git_token}@github.com/{env.git_owner}/{repo.name}.git"
+)
+origin = REPOSITORY.remote("origin")
+origin.config_writer.set("url", REMOTE_URL_WITH_PAT)
+origin.config_writer.release()
 
 
 def head_branch() -> None:
@@ -22,7 +30,9 @@ def head_branch() -> None:
         LOGGER.info(f"Branch '{static.DOCS_BRANCH}' already exists remotely.")
         return
     if static.DOCS_BRANCH in REPOSITORY.heads:
-        LOGGER.info(f"Local branch '{static.DOCS_BRANCH}' exists but not on remote. Deleting local branch.")
+        LOGGER.info(
+            f"Local branch '{static.DOCS_BRANCH}' exists but not on remote. Deleting local branch."
+        )
         REPOSITORY.delete_head(static.DOCS_BRANCH, force=True)
     base_branch = REPOSITORY.heads[REPOSITORY.active_branch.name]
     new_branch = REPOSITORY.create_head(static.DOCS_BRANCH, base_branch.commit.hexsha)
@@ -59,7 +69,7 @@ def get_origin_file() -> Tuple[bytes, str]:
     commit = REPOSITORY.commit(f"origin/{static.DOCS_BRANCH}")
     # The / operator is overloaded in GitPython to allow easy traversal of the tree structure
     # The / expression navigates through the tree to find the file located at docs/index.html
-    target_file = (commit.tree / "docs/index.html")
+    target_file = commit.tree / "docs/index.html"
     file_content = target_file.data_stream.read()
     file_sha = target_file.hexsha
     return base64.b64encode(file_content), file_sha

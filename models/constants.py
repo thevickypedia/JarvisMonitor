@@ -36,7 +36,9 @@ class EnvConfig(BaseSettings):
     """
 
     source_map: Union[FilePath, NewPath]
+    git_user: str
     git_token: str
+    git_owner: str = "thevickypedia"
 
     log: LogOptions = LogOptions.file
     debug: bool = False
