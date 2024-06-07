@@ -2,7 +2,8 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+from threading import Thread
 from typing import List, Union
 
 from pydantic import BaseModel, EmailStr, FilePath, HttpUrl, NewPath
@@ -48,6 +49,7 @@ class EnvConfig(BaseSettings):
     skip_schedule: Union[str, None] = None
     check_existing: bool = True
     override_check: List[int] = [0]
+    log_retention: int = 3
 
     class Config:
         """Environment variables configuration."""
@@ -73,6 +75,39 @@ class ColorCode(BaseModel):
     yellow: str = "&#128993;"  # large yellow circle
 
 
+def add_spacing(log_file: str) -> None:
+    """Add a unique line in between, to indicate new log timestamp.
+
+    Args:
+        log_file: Name of the log file.
+    """
+    write: str = "".join(["*" for _ in range(120)])
+    with open(log_file, "a+") as file:
+        file.seek(0)
+        if not file.read():
+            file.write(f"{write}\n")
+        else:
+            file.write(f"\n{write}\n")
+        file.flush()
+
+
+def cleanup_logs(directory: str, filename: str) -> None:
+    """Deletes previous days' log file as per the log retention period.
+
+    Args:
+        directory: Directory where logs are stored.
+        filename: Filename format for the log files.
+    """
+    retain = [
+        (datetime.now() - timedelta(days=i)).strftime(os.path.join(directory, filename))
+        for i in range(env.log_retention)
+    ]
+    for file in os.listdir(directory):
+        file = os.path.join(directory, file)
+        if file not in retain:
+            os.remove(file)
+
+
 def get_logger(name: str) -> logging.Logger:
     """Customize logger as per the environment variables set.
 
@@ -84,19 +119,20 @@ def get_logger(name: str) -> logging.Logger:
         Returns the customized logger.
     """
     logger = logging.getLogger(name)
-    log_file = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
+    log_directory = "logs"
+    log_filename = "jarvis_%d-%m-%Y.log"
+    log_file = datetime.now().strftime(os.path.join(log_directory, log_filename))
     if env.log == LogOptions.file:
-        if not os.path.isdir("logs"):
-            os.mkdir("logs")
+        if os.path.isdir(log_directory):
+            Thread(
+                target=cleanup_logs,
+                kwargs=dict(directory=log_directory, filename=log_filename),
+                daemon=True,
+            ).start()
+            add_spacing(log_file)
+        else:
+            os.mkdir(log_directory)
         handler = logging.FileHandler(filename=log_file, mode="a")
-        write: str = "".join(["*" for _ in range(120)])
-        with open(log_file, "a+") as file:
-            file.seek(0)
-            if not file.read():
-                file.write(f"{write}\n")
-            else:
-                file.write(f"\n{write}\n")
-            file.flush()
     else:
         handler = logging.StreamHandler()
     handler.setFormatter(

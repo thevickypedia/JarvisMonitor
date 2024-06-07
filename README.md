@@ -39,6 +39,7 @@ Monitor that runs in the background to report the health status of Jarvis and it
 - **skip_schedule** - Skip the monitoring schedule at a particular time. Example: `12:00 AM`
 - **check_existing** - Check existing `index.html` file for changes, before executing `push`. Defaults to `True`
 - **override_check** - List of `minutes` to set the `check_existing` flag as `False`. Defaults to `[0]` (every hour)
+- **log_retention** - Number of days worth of logs to retain. Defaults to `3`
 
 [1]: https://github.com/thevickypedia/Jarvis
 [2]: https://jarvis-health.vigneshrao.com

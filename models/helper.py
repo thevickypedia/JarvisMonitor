@@ -27,7 +27,7 @@ def check_performance(process: psutil.Process) -> Dict[str, int]:
     open_files = len(process.open_files())
     info_dict = {"cpu": cpu, "threads": threads, "open_files": open_files}
     LOGGER.info({f"{name} [{process.pid}]": info_dict})
-    if cpu > 10 or open_files > 50:  # current threshold for Jarvis
+    if cpu > 50 or open_files > 50:  # current threshold for Jarvis
         LOGGER.critical("%s [%d] should be optimized", name, process.pid)
         return info_dict
 
