@@ -3,7 +3,7 @@ import os
 import sys
 import time
 from datetime import datetime
-from typing import Union
+from typing import List, Union
 
 from pydantic import BaseModel, EmailStr, FilePath, HttpUrl, NewPath
 from pydantic_settings import BaseSettings
@@ -45,8 +45,9 @@ class EnvConfig(BaseSettings):
     gmail_user: Union[EmailStr, None] = None
     gmail_pass: Union[str, None] = None
     recipient: Union[EmailStr, None] = None
-    skip_schedule: str = None
+    skip_schedule: Union[str, None] = None
     check_existing: bool = True
+    override_check: List[int] = [0]
 
     class Config:
         """Environment variables configuration."""
@@ -60,7 +61,11 @@ env = EnvConfig()
 
 
 class ColorCode(BaseModel):
-    """Color codes for red and green status indicators."""
+    """Color codes for red and green status indicators.
+
+    >>> ColorCode
+
+    """
 
     red: str = "&#128308;"  # large green circle
     green: str = "&#128994;"  # large red circle
@@ -68,43 +73,53 @@ class ColorCode(BaseModel):
     yellow: str = "&#128993;"  # large yellow circle
 
 
-LOGGER = logging.getLogger("jarvis")
-DEFAULT_LOG_FORMAT = logging.Formatter(
-    datefmt="%b-%d-%Y %I:%M:%S %p",
-    fmt="%(asctime)s - %(levelname)s - [%(module)s:%(lineno)d] - %(funcName)s - %(message)s",
-)
-LOG_FILE: str = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
-if env.log == LogOptions.file:
-    if not os.path.isdir("logs"):
-        os.mkdir("logs")
-    HANDLER = logging.FileHandler(filename=LOG_FILE, mode="a")
-    write: str = "".join(["*" for _ in range(120)])
-    with open(LOG_FILE, "a+") as file:
-        file.seek(0)
-        if not file.read():
-            file.write(f"{write}\n")
-        else:
-            file.write(f"\n{write}\n")
-        file.flush()
-else:
-    HANDLER = logging.StreamHandler()
-HANDLER.setFormatter(fmt=DEFAULT_LOG_FORMAT)
-LOGGER.addHandler(hdlr=HANDLER)
+def get_logger(name: str) -> logging.Logger:
+    """Customize logger as per the environment variables set.
 
-if env.debug:
-    LOGGER.setLevel(level=logging.DEBUG)
-else:
-    LOGGER.setLevel(level=logging.INFO)
+    Args:
+        name: Name of the logger.
 
-if env.skip_schedule:
-    try:
-        datetime.strptime(env.skip_schedule, "%I:%M %p")  # Validate datetime format
-    except ValueError as error:
-        LOGGER.warning(error)
+    Returns:
+        logging.Logger:
+        Returns the customized logger.
+    """
+    logger = logging.getLogger(name)
+    log_file = datetime.now().strftime(os.path.join("logs", "jarvis_%d-%m-%Y.log"))
+    if env.log == LogOptions.file:
+        if not os.path.isdir("logs"):
+            os.mkdir("logs")
+        handler = logging.FileHandler(filename=log_file, mode="a")
+        write: str = "".join(["*" for _ in range(120)])
+        with open(log_file, "a+") as file:
+            file.seek(0)
+            if not file.read():
+                file.write(f"{write}\n")
+            else:
+                file.write(f"\n{write}\n")
+            file.flush()
+    else:
+        handler = logging.StreamHandler()
+    handler.setFormatter(
+        fmt=logging.Formatter(
+            datefmt="%b-%d-%Y %I:%M:%S %p",
+            fmt="%(asctime)s - %(levelname)s - [%(module)s:%(lineno)d] - %(funcName)s - %(message)s",
+        )
+    )
+    logger.addHandler(hdlr=handler)
+    if env.debug:
+        logger.setLevel(level=logging.DEBUG)
+    else:
+        logger.setLevel(level=logging.INFO)
+    return logger
 
 
 def get_webpage() -> Union[str, None]:
-    """Tries to get the hosted webpage from CNAME file if available in docs directory."""
+    """Tries to get the hosted webpage from CNAME file if available in docs directory.
+
+    Returns:
+        str:
+        Returns the website mentioned in the CNAME file.
+    """
     try:
         with open(os.path.join("docs", "CNAME")) as f:
             return f.read().strip()
@@ -119,6 +134,7 @@ class Constants(BaseModel):
 
     """
 
+    SKIPPER_FORMAT: str = "%H:%M"
     TIMEZONE: str = time.strftime("%Z %z")
     DATETIME: str = datetime.now().strftime("%B %d, %Y - %I:%M %p") + " " + TIMEZONE
     NOTIFICATION: Union[FilePath, NewPath] = os.path.join(
@@ -135,3 +151,11 @@ class Constants(BaseModel):
 
 static = Constants()
 color_codes = ColorCode()
+LOGGER = get_logger("jarvis")
+
+if env.skip_schedule:
+    try:
+        # Validate datetime format
+        datetime.strptime(env.skip_schedule, static.SKIPPER_FORMAT)
+    except ValueError as error:
+        LOGGER.warning(error)

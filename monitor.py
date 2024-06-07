@@ -11,7 +11,7 @@ import yaml
 
 from models.conditions import all_pids_are_red, main_process_is_red, some_pids_are_red
 from models.constants import LOGGER, color_codes, env, static
-from models.helper import check_cpu_util, send_email
+from models.helper import check_performance, send_email
 
 STATUS_DICT = {}
 
@@ -26,7 +26,11 @@ def get_data() -> Dict[str, Dict[int, List[str]]]:
 
 
 def publish_docs(status: dict = None) -> None:
-    """Updates the docs/index.html file."""
+    """Updates the docs/index.html file.
+
+    Args:
+        status: Translated status dictionary.
+    """
     LOGGER.info("Updating index.html")
     t_desc, l_desc = "", ""
     if not status:  # process map is missing
@@ -76,11 +80,20 @@ def publish_docs(status: dict = None) -> None:
         file.flush()
 
 
-def classify_processes(process: psutil.Process, proc_impact: List[str]):
-    """Classify all processes into good, bad and evil."""
+def classify_processes(process: psutil.Process, proc_impact: List[str]) -> None:
+    """Classify all processes into good (green - all ok), bad (yellow - degraded performance) and evil (red - bad PID).
+
+    Args:
+        process: Process object.
+        proc_impact: Impact because of the process.
+
+    Raises:
+        Exception:
+        Raises a bare exception to notify the worker, that the thread has failed.
+    """
     func_name = process.func  # noqa
     if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
-        if issue := check_cpu_util(process=process):
+        if issue := check_performance(process=process):
             LOGGER.info("%s [%d] is INTENSE", func_name, process.pid)
             # combine list of string with list of tuples
             proc_impact.append(
@@ -97,7 +110,16 @@ def classify_processes(process: psutil.Process, proc_impact: List[str]):
 
 
 def extract_proc_info(func_name: str, proc_info: Dict[int, List[str]]):
-    """Extract process information from PID and classify the process to update status dictionary."""
+    """Validates the process ID and calls the classifier function.
+
+    Args:
+        func_name: Function name.
+        proc_info: Process information as a dictionary.
+
+    Raises:
+        Exception:
+        Raises a bare exception to notify the worker, that the thread has failed.
+    """
     for pid, impact in proc_info.items():
         try:
             process = psutil.Process(pid=pid)
@@ -112,11 +134,7 @@ def extract_proc_info(func_name: str, proc_info: Dict[int, List[str]]):
 
 def main() -> None:
     """Checks the health of all processes in the mapping and actions accordingly."""
-    if env.skip_schedule == datetime.now().strftime("%I:%M %p"):
-        LOGGER.info("Schedule ignored at '%s'", env.skip_schedule)
-        return
-    # Enforce check_existing flag to False every 1 hour
-    if datetime.now().minute == 0:
+    if datetime.now().minute in env.override_check:
         env.check_existing = False
     LOGGER.info("Monitoring processes health at: %s", static.DATETIME)
     if not (data := get_data()):
@@ -124,7 +142,7 @@ def main() -> None:
         return
     notify = False
     futures = {}
-    with ThreadPoolExecutor(max_workers=len(data) * 2) as executor:
+    with ThreadPoolExecutor(max_workers=len(data)) as executor:
         for key, value in data.items():
             future = executor.submit(
                 extract_proc_info, **dict(func_name=key, proc_info=value)
@@ -133,7 +151,9 @@ def main() -> None:
     for future in as_completed(futures):
         if future.exception():
             LOGGER.error(
-                f"Thread processing for {futures[future]!r} received an exception: {future.exception()}"
+                "Thread processing for '%s' received an exception: %s",
+                futures[future],
+                future.exception(),
             )
             notify = True
     data_keys = sorted(data.keys())

@@ -11,10 +11,18 @@ from models.conditions import all_pids_are_red, main_process_is_red, some_pids_a
 from models.constants import LOGGER, env, static
 
 
-def check_cpu_util(process: psutil.Process) -> Dict:
-    """Check CPU utilization, number of threads and open files."""
+def check_performance(process: psutil.Process) -> Dict[str, int]:
+    """Checks performance by monitoring CPU utilization, number of threads and open files.
+
+    Args:
+        process: Process object.
+
+    Returns:
+        Dict[str, int]:
+        Returns a dictionary of metrics and their values as key-value pair.
+    """
     name = process.func  # noqa
-    cpu = process.cpu_percent(interval=3)
+    cpu = process.cpu_percent(interval=0.5)
     threads = process.num_threads()
     open_files = len(process.open_files())
     info_dict = {"cpu": cpu, "threads": threads, "open_files": open_files}
@@ -25,7 +33,11 @@ def check_cpu_util(process: psutil.Process) -> Dict:
 
 
 def send_email(status: dict = None) -> None:
-    """Sends an email notification if Jarvis is down."""
+    """Sends an email notification if Jarvis is down.
+
+    Args:
+        status: Translated status dictionary.
+    """
     if not all((env.gmail_user, env.gmail_pass, env.recipient)):
         LOGGER.warning("Not all env vars are present for sending an email!!")
         return
