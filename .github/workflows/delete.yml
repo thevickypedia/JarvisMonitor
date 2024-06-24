@@ -10,7 +10,7 @@ permissions: write-all
 
 jobs:
   delete-docs-branch:
-    runs-on: thevickypedia-default
+    runs-on: thevickypedia-lite
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

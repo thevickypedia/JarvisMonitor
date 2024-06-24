@@ -8,10 +8,9 @@ on:
 jobs:
   delete-docs:
     permissions: write-all
-    uses:
-      ./.github/workflows/delete.yml
+    uses: ./.github/workflows/delete.yml
   coronation:
-    runs-on: thevickypedia-default
+    runs-on: thevickypedia-lite
     permissions:
       actions: write
     steps:
