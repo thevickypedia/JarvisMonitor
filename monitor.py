@@ -64,7 +64,7 @@ def publish_docs(status: dict = None) -> None:
                 "<b>Description:</b> Jarvis is running in limited mode. "
                 "All offline communicators and home automations are currently unavailable."
             )
-    with open(os.path.join("templates", "web_template.html")) as web_temp:
+    with open(static.WEB_TEMPLATE) as web_temp:
         template_data = web_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(

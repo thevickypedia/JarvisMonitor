@@ -1,12 +1,13 @@
 import logging
 import os
+import pathlib
 import sys
 import time
 from datetime import datetime, timedelta
 from threading import Thread
 from typing import List, Union
 
-from pydantic import BaseModel, EmailStr, FilePath, HttpUrl, NewPath
+from pydantic import BaseModel, DirectoryPath, EmailStr, FilePath, HttpUrl, NewPath
 from pydantic_settings import BaseSettings
 
 if sys.version_info.minor > 10:
@@ -16,6 +17,9 @@ else:
 
     class StrEnum(str, Enum):
         """Override for python 3.10 due to lack of StrEnum."""
+
+
+REPOSITORY = pathlib.Path(__file__).parent.parent
 
 
 class LogOptions(StrEnum):
@@ -55,7 +59,11 @@ class EnvConfig(BaseSettings):
         """Environment variables configuration."""
 
         env_prefix = ""
-        env_file = os.environ.get("env_file", os.environ.get("ENV_FILE", ".env"))
+        env_file = (
+            os.getenv("env_file")
+            or os.getenv("ENV_FILE")
+            or os.path.join(REPOSITORY, ".env")
+        )
         extra = "allow"
 
 
@@ -108,18 +116,20 @@ def cleanup_logs(directory: str, filename: str) -> None:
             os.remove(file)
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(
+    name: str, log_directory: Union[DirectoryPath, NewPath]
+) -> logging.Logger:
     """Customize logger as per the environment variables set.
 
     Args:
         name: Name of the logger.
+        log_directory: Directory to store logs.
 
     Returns:
         logging.Logger:
         Returns the customized logger.
     """
     logger = logging.getLogger(name)
-    log_directory = "logs"
     log_filename = "jarvis_%d-%m-%Y.log"
     log_file = datetime.now().strftime(os.path.join(log_directory, log_filename))
     if env.log == LogOptions.file:
@@ -157,7 +167,7 @@ def get_webpage() -> Union[str, None]:
         Returns the website mentioned in the CNAME file.
     """
     try:
-        with open(os.path.join("docs", "CNAME")) as f:
+        with open(os.path.join(REPOSITORY, "docs", "CNAME")) as f:
             return f.read().strip()
     except FileNotFoundError:
         return
@@ -174,9 +184,18 @@ class Constants(BaseModel):
     TIMEZONE: str = time.strftime("%Z %z")
     DATETIME: str = datetime.now().strftime("%B %d, %Y - %I:%M %p") + " " + TIMEZONE
     NOTIFICATION: Union[FilePath, NewPath] = os.path.join(
-        os.getcwd(), "last_notify.yaml"
+        REPOSITORY, "last_notify.yaml"
     )
-    INDEX_FILE: Union[FilePath, NewPath] = os.path.join("docs", "index.html")
+    EMAIL_TEMPLATE: Union[FilePath, NewPath] = os.path.join(
+        REPOSITORY, "templates", "email_template.html"
+    )
+    WEB_TEMPLATE: Union[FilePath, NewPath] = os.path.join(
+        REPOSITORY, "templates", "web_template.html"
+    )
+    LOG_DIRECTORY: Union[DirectoryPath, NewPath] = os.path.join(REPOSITORY, "logs")
+    INDEX_FILE: Union[FilePath, NewPath] = os.path.join(
+        REPOSITORY, "docs", "index.html"
+    )
     BASE_URL: HttpUrl = "https://api.github.com/repos/thevickypedia/JarvisMonitor"
     DOCS_BRANCH: str = "docs"
     INDEX_URL: str = f"{BASE_URL}/contents/docs/index.html"
@@ -187,7 +206,7 @@ class Constants(BaseModel):
 
 static = Constants()
 color_codes = ColorCode()
-LOGGER = get_logger("jarvis")
+LOGGER = get_logger("jarvis", static.LOG_DIRECTORY)
 
 if env.skip_schedule:
     try:

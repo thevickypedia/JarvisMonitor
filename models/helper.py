@@ -76,7 +76,7 @@ def send_email(status: dict = None) -> None:
         LOGGER.critical(auth.body)
         return
     LOGGER.info("Sending email")
-    with open(os.path.join("templates", "email_template.html")) as email_temp:
+    with open(static.EMAIL_TEMPLATE) as email_temp:
         template_data = email_temp.read()
     template = jinja2.Template(template_data)
     content = template.render(result=status, webpage=static.webpage)

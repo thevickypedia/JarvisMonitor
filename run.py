@@ -1,7 +1,6 @@
 import base64
 import json
 import os
-import pathlib
 from datetime import datetime
 from typing import Tuple
 
@@ -9,7 +8,7 @@ import git
 import requests
 
 import monitor
-from models.constants import LOGGER, env, static
+from models.constants import LOGGER, REPOSITORY, env, static
 
 
 def get_index_file() -> bytes:
@@ -35,12 +34,11 @@ class GitHub:
             "Authorization": "token " + env.git_token,
             "Content-Type": "application/json",
         }
-        local_repo = pathlib.Path(os.getcwd())
-        self.repository = git.Repo(local_repo)
+        self.repository = git.Repo(REPOSITORY)
         self.origin = self.repository.remote(name="origin")
         self.origin.config_writer.set(
             "url",
-            f"https://{env.git_user}:{env.git_token}@github.com/{env.git_owner}/{local_repo.name}.git",
+            f"https://{env.git_user}:{env.git_token}@github.com/{env.git_owner}/{REPOSITORY.name}.git",
         )
         self.origin.config_writer.release()
 
