@@ -16,7 +16,7 @@ from models.helper import check_performance, send_email
 STATUS_DICT = {}
 
 
-def get_data() -> Dict[str, Dict[int, List[str]]]:
+def get_data() -> Dict[str, Dict[int, List[str]]] | None:
     """Get processes mapping from Jarvis."""
     try:
         with open(env.source_map) as file:
@@ -93,7 +93,7 @@ def classify_processes(process: psutil.Process, proc_impact: List[str]) -> None:
     """
     func_name = process.func  # noqa
     if psutil.pid_exists(process.pid) and process.status() == psutil.STATUS_RUNNING:
-        if issue := check_performance(process=process):
+        if env.check_performance and (issue := check_performance(process=process)):
             LOGGER.info("%s [%d] is INTENSE", func_name, process.pid)
             # combine list of string with list of tuples
             proc_impact.append(

@@ -37,6 +37,7 @@ Monitor that runs in the background to report the health status of Jarvis and it
 - **gmail_pass** - gmail password to authenticate the account.
 - **recipient** - Email address to send an email notification.
 - **skip_schedule** - Skip the monitoring schedule at a particular time. Example: `12:00 AM`
+- **check_performance** - Boolean flag to check performance of each process. Defaults to `False`
 - **check_existing** - Check existing `index.html` file for changes, before executing `push`. Defaults to `True`
 - **override_check** - List of `minutes` to set the `check_existing` flag as `False`. Defaults to `[0]` (every hour)
 - **log_retention** - Number of days worth of logs to retain. Defaults to `3`

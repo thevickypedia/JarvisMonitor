@@ -11,7 +11,7 @@ import monitor
 from models.constants import LOGGER, REPOSITORY, env, static
 
 
-def get_index_file() -> bytes:
+def get_index_file() -> bytes | None:
     """Reads the index file and returns the data as bytes."""
     try:
         with open(static.INDEX_FILE, "rb") as file:

@@ -11,7 +11,7 @@ from models.conditions import all_pids_are_red, main_process_is_red, some_pids_a
 from models.constants import LOGGER, env, static
 
 
-def check_performance(process: psutil.Process) -> Dict[str, int]:
+def check_performance(process: psutil.Process) -> Dict[str, float | int] | None:
     """Checks performance by monitoring CPU utilization, number of threads and open files.
 
     Args:

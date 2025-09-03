@@ -51,6 +51,7 @@ class EnvConfig(BaseSettings):
     gmail_pass: Union[str, None] = None
     recipient: Union[EmailStr, None] = None
     skip_schedule: Union[str, None] = None
+    check_performance: bool = False
     check_existing: bool = True
     override_check: List[int] = [0]
     log_retention: int = 3
