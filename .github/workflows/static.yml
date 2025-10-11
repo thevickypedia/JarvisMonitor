@@ -34,7 +34,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     # runners on macOS need 'brew install gnu-tar'
-    runs-on: thevickypedia-performance
+    runs-on: thevickypedia-default
     steps:
       - name: Checkout
         uses: actions/checkout@v4

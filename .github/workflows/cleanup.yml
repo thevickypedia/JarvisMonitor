@@ -10,7 +10,7 @@ jobs:
     permissions: write-all
     uses: ./.github/workflows/delete.yml
   coronation:
-    runs-on: thevickypedia-lite
+    runs-on: thevickypedia-default
     permissions:
       actions: write
     steps:
