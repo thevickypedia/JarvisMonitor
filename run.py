@@ -1,14 +1,24 @@
 import base64
+import difflib
 import json
 import os
 from datetime import datetime
-from typing import Tuple
+from typing import List, Tuple
 
 import git
 import requests
+from bs4 import BeautifulSoup
 
 import monitor
 from models.constants import LOGGER, REPOSITORY, env, static
+
+
+def normalize(html: str | bytes) -> List[str]:
+    """Normalize HTML content and return as list of lines."""
+    if isinstance(html, bytes):
+        html = html.decode("utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    return soup.prettify().splitlines()
 
 
 def get_index_file() -> bytes | None:
@@ -104,6 +114,15 @@ class GitHub:
             # push only when there are changes
             if env.check_existing:
                 push = local_content != remote_content
+                if push:
+                    LOGGER.info("Content has been updated")
+                    decoded_local = base64.b64decode(local_content)
+                    decoded_remote = base64.b64decode(remote_content)
+                    diff = difflib.unified_diff(
+                        normalize(decoded_local),
+                        normalize(decoded_remote),
+                    )
+                    LOGGER.info("Difference:\n" + "\n".join(diff))
             else:
                 push = True
                 if datetime.now().minute not in env.override_check:
